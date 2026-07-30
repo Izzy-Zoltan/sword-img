@@ -1,0 +1,48 @@
+[gd_scene load_steps=7 format=3 uid="uid://nc52v1wy208o"]
+
+[ext_resource type="Script" path="res://scripts/player/sword_controller.gd" id="1_controller"]
+[ext_resource type="Script" path="res://scripts/input/mouse_sword_input.gd" id="2_mouse_input"]
+[ext_resource type="Script" path="res://scripts/player/sword_motion_sampler.gd" id="3_motion_sampler"]
+[ext_resource type="Script" path="res://scripts/combat/sword_hitbox.gd" id="4_hitbox"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_blade"]
+size = Vector3(0.08, 0.08, 1.2)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_blade"]
+albedo_color = Color(0.72, 0.76, 0.82, 1)
+metallic = 0.85
+roughness = 0.25
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_blade"]
+size = Vector3(0.1, 0.1, 1.2)
+
+[node name="Player" type="Node3D"]
+script = ExtResource("1_controller")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+current = true
+fov = 75.0
+
+[node name="SwordPivot" type="Node3D" parent="Camera3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.35, -0.25, -0.45)
+
+[node name="SwordMesh" type="MeshInstance3D" parent="Camera3D/SwordPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.65)
+mesh = SubResource("BoxMesh_blade")
+surface_material_override/0 = SubResource("StandardMaterial3D_blade")
+
+[node name="SwordHitbox" type="Area3D" parent="Camera3D/SwordPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.65)
+monitoring = false
+monitorable = false
+script = ExtResource("4_hitbox")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Camera3D/SwordPivot/SwordHitbox"]
+shape = SubResource("BoxShape3D_blade")
+
+[node name="MouseSwordInput" type="Node" parent="."]
+script = ExtResource("2_mouse_input")
+
+[node name="SwordMotionSampler" type="Node" parent="."]
+script = ExtResource("3_motion_sampler")
