@@ -1,17 +1,29 @@
-[gd_scene load_steps=5 format=3 uid="uid://cps20g3i3byav"]
+[gd_scene load_steps=6 format=3 uid="uid://cps20g3i3byav"]
 
 [ext_resource type="PackedScene" uid="uid://nc52v1wy208o" path="res://scenes/player.tscn" id="1_player"]
+[ext_resource type="Script" uid="uid://ve1w8h3q6s3o" path="res://scripts/ui/field_hud.gd" id="2_field_hud"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_floor"]
 size = Vector2(24, 24)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
-albedo_color = Color(0.18, 0.2, 0.24, 1)
+albedo_color = Color(0.2721085, 0.3271576, 0.4260854, 1)
+metallic = 0.35
+roughness = 0.48
 
 [sub_resource type="Environment" id="Environment_6pmjc"]
-background_mode = 2
+background_mode = 1
+background_color = Color(0.015, 0.025, 0.06, 1)
+ambient_light_source = 3
+ambient_light_color = Color(0.22, 0.31, 0.48, 1)
+ambient_light_energy = 0.65
+tonemap_mode = 2
+glow_enabled = true
+glow_intensity = 0.7
+glow_strength = 0.9
 
 [node name="Field" type="Node3D"]
+script = ExtResource("2_field_hud")
 
 [node name="Floor" type="MeshInstance3D" parent="."]
 mesh = SubResource("PlaneMesh_floor")
@@ -25,7 +37,35 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2)
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0.5, -0.612372, 0.612372, 0, 8, 0)
+light_color = Color(0.55, 0.72, 1, 1)
+light_energy = 1.2
 shadow_enabled = true
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_6pmjc")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="HealthLabel" type="Label" parent="CanvasLayer"]
+offset_left = 98.0
+offset_top = 139.0
+offset_right = 210.0
+offset_bottom = 184.0
+theme_override_font_sizes/font_size = 32
+text = "Health:"
+
+[node name="ScoreLabel" type="Label" parent="CanvasLayer"]
+offset_left = 98.0
+offset_top = 51.0
+offset_right = 192.0
+offset_bottom = 96.0
+theme_override_font_sizes/font_size = 32
+text = "Score:"
+
+[node name="StateLabel" type="Label" parent="CanvasLayer"]
+offset_left = 98.0
+offset_top = 227.0
+offset_right = 400.0
+offset_bottom = 272.0
+theme_override_font_sizes/font_size = 32
+text = "State: Idle"

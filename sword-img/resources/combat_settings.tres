@@ -1,0 +1,6 @@
+[gd_resource type="Resource" script_class="SwordCombatSettings" load_steps=1 format=3]
+
+[ext_resource type="Script" path="res://scripts/player/sword_combat_settings.gd" id="1_5p7k4"]
+
+[resource]
+script = ExtResource("1_5p7k4")
