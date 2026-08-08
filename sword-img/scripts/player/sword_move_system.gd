@@ -122,7 +122,7 @@ func update_gestures(
 			_pending_move = Move.BLOCK
 		return
 
-	if blocking_input and _pending_move == Move.IDLE:
+	if blocking_input and _pending_move == Move.IDLE and state != State.CHARGED:
 		_commit_move(Move.CHARGE)
 		return
 
@@ -186,14 +186,17 @@ func _try_commit_slash() -> void:
 	elif direction.y >= settings.cardinal_precision:
 		slash_move = Move.SLASH_DOWN
 	elif direction.y <= -settings.cardinal_precision:
-		_commit_move(Move.CHARGE)
+		if state != State.CHARGED:
+			_commit_move(Move.CHARGE)
+		else:
+			_reset_slash_tracking()
 		return
 	else:
 		# Ignore ambiguous diagonal gestures; this keeps attacks intentional.
 		_reset_slash_tracking()
 		return
 
-	last_stroke_direction = Vector2(-_stroke_accum.y, -_stroke_accum.x)
+	last_stroke_direction = Vector2(_stroke_accum.y, -_stroke_accum.x)
 	_commit_move(slash_move)
 
 

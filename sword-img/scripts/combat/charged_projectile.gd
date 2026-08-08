@@ -11,6 +11,7 @@ static var _cached_slash_mesh: Mesh
 var _direction := Vector3.FORWARD
 var _starting_lifetime := lifetime
 var _material: StandardMaterial3D
+var attack_lane := "center"
 
 
 func _ready() -> void:
@@ -19,8 +20,9 @@ func _ready() -> void:
 	connect("body_entered", Callable(self, "_on_body_entered"))
 
 
-func launch(direction: Vector3) -> void:
+func launch(direction: Vector3, lane: String) -> void:
 	_direction = direction.normalized()
+	attack_lane = lane
 	look_at(global_position + _direction, Vector3.UP)
 	_build_slash_wave()
 

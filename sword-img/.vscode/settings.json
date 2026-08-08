@@ -1,0 +1,10 @@
+{
+    "godotTools.editorPath.godot4": "C:\\Users\\izzyz\\Godot\\Editors\\.editor_config\\Sword-IMG\\Godot_v4.5-stable_win64.exe",
+    "editor.tabSize": 4,
+    "editor.insertSpaces": false,
+    "files.eol": "\n",
+    "files.exclude": {
+        "**/*.gd.uid": true,
+        "**/*.cs.uid": true
+    }
+}

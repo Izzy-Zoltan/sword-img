@@ -2,6 +2,8 @@
 
 [ext_resource type="PackedScene" uid="uid://nc52v1wy208o" path="res://scenes/player.tscn" id="1_player"]
 [ext_resource type="Script" uid="uid://ve1w8h3q6s3o" path="res://scripts/ui/field_hud.gd" id="2_field_hud"]
+[ext_resource type="PackedScene" uid="uid://d4n0k2k7j8r1m" path="res://scenes/enemy.tscn" id="3_enemy"]
+[ext_resource type="Script" path="res://scripts/enemy/enemy_spawner.gd" id="4_spawner"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_floor"]
 size = Vector2(24, 24)
@@ -10,6 +12,9 @@ size = Vector2(24, 24)
 albedo_color = Color(0.2721085, 0.3271576, 0.4260854, 1)
 metallic = 0.35
 roughness = 0.48
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
+size = Vector3(24, 0.1, 24)
 
 [sub_resource type="Environment" id="Environment_6pmjc"]
 background_mode = 1
@@ -29,6 +34,11 @@ script = ExtResource("2_field_hud")
 mesh = SubResource("PlaneMesh_floor")
 surface_material_override/0 = SubResource("StandardMaterial3D_floor")
 
+[node name="FloorCollision" type="StaticBody3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FloorCollision"]
+shape = SubResource("BoxShape3D_floor")
+
 [node name="PlayerSpawn" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2)
 
@@ -43,6 +53,12 @@ shadow_enabled = true
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_6pmjc")
+
+[node name="EnemySpawner" type="Node" parent="."]
+script = ExtResource("4_spawner")
+enemy_scene = ExtResource("3_enemy")
+spawn_interval = 1.0
+max_active_enemies = 1
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
