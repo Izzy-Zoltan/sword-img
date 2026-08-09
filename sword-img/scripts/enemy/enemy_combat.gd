@@ -1,22 +1,19 @@
 class_name EnemyCombat
 extends Node
 
-var _enemy: CharacterBody3D
+var _enemy: BasicEnemy
 var _animator: EnemyAnimator
 var _font: Font
 var _mesh_material: StandardMaterial3D
 
-func setup(enemy: CharacterBody3D, animator: EnemyAnimator, mesh: MeshInstance3D) -> void:
+func setup(enemy: BasicEnemy, animator: EnemyAnimator, mesh: MeshInstance3D) -> void:
 	_enemy = enemy
 	_animator = animator
 	_font = load("res://Assets/PixelifySans-Bold.ttf")
 	_mesh_material = mesh.get_active_material(0).duplicate()
 	mesh.set_surface_override_material(0, _mesh_material)
 
-func update(delta: float, player: Node3D) -> void:
-	_update_timers(delta)
-	_update_hit_flash(delta)
-
+func update(player: Node3D) -> void:
 	if player == null:
 		_animator.play_idle()
 		return
@@ -36,16 +33,20 @@ func update(delta: float, player: Node3D) -> void:
 
 	_animator.play_idle()
 
+func update_hit_flash(delta: float) -> void:
+	if _mesh_material == null:
+		return
+	if _enemy._flash_timer > 0.0:
+		_enemy._flash_timer -= delta
+		var ratio := clampf(_enemy._flash_timer / 0.16, 0.0, 1.0)
+		_mesh_material.albedo_color = Color(1.0, 0.2, 0.2).lerp(Color(3.0, 2.5, 1.2), ratio)
+		_mesh_material.emission = Color(0.55, 0.1, 0.1).lerp(Color(4.0, 3.0, 1.0), ratio)
+	else:
+		_mesh_material.albedo_color = Color(1.0, 0.2, 0.2)
+		_mesh_material.emission = Color(0.55, 0.1, 0.1)
+
 func connect_hurt_area(hurt_area: Area3D) -> void:
 	hurt_area.area_entered.connect(_on_area_entered)
-
-func _update_timers(delta: float) -> void:
-	_enemy._hit_cooldown = maxf(_enemy._hit_cooldown - delta, 0.0)
-	_enemy._attack_timer = maxf(_enemy._attack_timer - delta, 0.0)
-	_enemy._windup_timer = maxf(_enemy._windup_timer - delta, 0.0)
-	_enemy._idle_timer = maxf(_enemy._idle_timer - delta, 0.0)
-	_enemy._pre_attack_idle_timer = maxf(_enemy._pre_attack_idle_timer - delta, 0.0)
-	_enemy._stagger_timer = maxf(_enemy._stagger_timer - delta, 0.0)
 
 func _handle_attack(player: Node3D) -> void:
 	if not _enemy._is_winding_up:
@@ -85,14 +86,14 @@ func _on_area_entered(area: Area3D) -> void:
 		return
 
 	_enemy._hit_cooldown = 0.2
-	_take_damage(1, area)
+	_take_damage(1)
 
 func _attack_lane(area: Area3D) -> String:
 	if area is SwordHitbox:
 		return (area as SwordHitbox).slash_lane
 	return (area as ChargedProjectile).attack_lane
 
-func _take_damage(amount: int, area: Area3D) -> void:
+func _take_damage(amount: int) -> void:
 	if _enemy._is_dying:
 		return
 
@@ -124,18 +125,6 @@ func _take_damage(amount: int, area: Area3D) -> void:
 
 	if _enemy._health <= 0:
 		_die()
-
-func _update_hit_flash(delta: float) -> void:
-	if _mesh_material == null:
-		return
-	if _enemy._flash_timer > 0.0:
-		_enemy._flash_timer -= delta
-		var ratio := clampf(_enemy._flash_timer / 0.16, 0.0, 1.0)
-		_mesh_material.albedo_color = Color(1.0, 0.2, 0.2).lerp(Color(3.0, 2.5, 1.2), ratio)
-		_mesh_material.emission = Color(0.55, 0.1, 0.1).lerp(Color(4.0, 3.0, 1.0), ratio)
-	else:
-		_mesh_material.albedo_color = Color(1.0, 0.2, 0.2)
-		_mesh_material.emission = Color(0.55, 0.1, 0.1)
 
 func _die() -> void:
 	if _enemy._is_dying:
