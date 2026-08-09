@@ -1,16 +1,12 @@
-[gd_scene load_steps=10 format=3 uid="uid://nc52v1wy208o"]
+[gd_scene load_steps=8 format=3 uid="uid://nc52v1wy208o"]
 
 [ext_resource type="Script" uid="uid://bsqhomu5x2qn4" path="res://scripts/player/sword_controller.gd" id="1_controller"]
 [ext_resource type="Script" uid="uid://dakw1k8eouk3g" path="res://scripts/input/mouse_sword_input.gd" id="2_mouse_input"]
-[ext_resource type="PackedScene" uid="uid://dxc8t4eplv07f" path="res://Assets/Sword.glb" id="2_tuyoq"]
+[ext_resource type="PackedScene" uid="uid://dxc8t4eplv07f" path="res://Assets/sword.glb" id="2_tuyoq"]
 [ext_resource type="Script" uid="uid://btnc74aoi682l" path="res://scripts/player/sword_move_system.gd" id="3_move_system"]
 [ext_resource type="Script" uid="uid://5kbqx2bccy0l" path="res://scripts/player/sword_move_animator.gd" id="4_move_animator"]
-[ext_resource type="Script" uid="uid://dvruux2sufeip" path="res://scripts/combat/sword_hitbox.gd" id="5_hitbox"]
 [ext_resource type="Script" uid="uid://cfrvsws0ech6q" path="res://scripts/player/sword_vfx.gd" id="6_sword_vfx"]
 [ext_resource type="Resource" path="res://resources/combat_settings.tres" id="7_combat_settings"]
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_blade"]
-size = Vector3(2.1309216, 0.1, 6.7467284)
 
 [node name="Player" type="Node3D"]
 script = ExtResource("1_controller")
@@ -27,16 +23,6 @@ transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0.35, -0.25, -1)
 transform = Transform3D(-2.1855694e-08, 0, -0.5, 0, 0.5, 0, 0.5, 0, -2.1855694e-08, 0, 0, -0.65)
 
 [node name="SwordModel" parent="Camera3D/SwordPivot/SwordMesh" instance=ExtResource("2_tuyoq")]
-
-[node name="SwordHitbox" type="Area3D" parent="Camera3D/SwordPivot"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.65)
-monitoring = false
-monitorable = false
-script = ExtResource("5_hitbox")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Camera3D/SwordPivot/SwordHitbox"]
-transform = Transform3D(-4.3711385e-08, -1, 4.3711385e-08, 0, -4.371139e-08, -0.99999994, 0.99999994, -4.371139e-08, 1.9106853e-15, 0.106067955, 0.5835204, 0.041597128)
-shape = SubResource("BoxShape3D_blade")
 
 [node name="SwordMoveAnimator" type="Node" parent="Camera3D"]
 script = ExtResource("4_move_animator")

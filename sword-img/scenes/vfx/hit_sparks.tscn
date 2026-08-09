@@ -1,0 +1,23 @@
+[gd_scene load_steps=2 format=3]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hit"]
+shading_mode = 1
+transparency = 1
+albedo_color = Color(1, 0.5, 0.1, 1)
+emission_enabled = true
+emission = Color(1, 0.85, 0.2, 1)
+emission_energy_multiplier = 4.5
+
+[node name="HitSparks" type="CPUParticles3D"]
+amount = 26
+lifetime = 0.35
+one_shot = true
+explosiveness = 0.95
+direction = Vector3(0, 0.4, 0)
+spread = 50.0
+gravity = Vector3(0, -14, 0)
+initial_velocity_min = 6.0
+initial_velocity_max = 11.0
+scale_amount_min = 0.08
+scale_amount_max = 0.24
+material_override = SubResource("StandardMaterial3D_hit")

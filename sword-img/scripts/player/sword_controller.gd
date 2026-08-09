@@ -2,30 +2,34 @@ extends Node3D
 
 const PROJECTILE_COLLIDER_SIZE := Vector3(1.6, 1.45, 0.3)
 const PROJECTILE_OFFSET := 0.7
+const SWORD_RANGE := 4.5
 
 @export var settings: SwordCombatSettings
 @export var max_health: int = 5
+@export var hits_per_charge: int = 3  ## Melee hits needed to earn one charge shot
 
 signal health_changed(new_health)
+signal charge_changed(points: int, max_points: int)
 signal died
 
 var health: int
+var charge_points: int = 0
 
 @onready var sword_pivot: Node3D = $Camera3D/SwordPivot
 @onready var camera: Camera3D = $Camera3D
 @onready var sword_mesh: Node3D = $Camera3D/SwordPivot/SwordMesh
-@onready var sword_hitbox: Area3D = $Camera3D/SwordPivot/SwordHitbox
 @onready var input_provider: SwordInputProvider = $MouseSwordInput
 @onready var move_system: SwordMoveSystem = $SwordMoveSystem
 @onready var move_animator: SwordMoveAnimator = $Camera3D/SwordMoveAnimator
 @onready var sword_vfx: SwordVFX = $Camera3D/SwordVFX
 @onready var _sword_material: StandardMaterial3D = null
-@onready var font = load("res://Assets/PixelifySans-Bold.ttf")
 
 var _pivot_rotation := Vector2.ZERO
 var _default_blade_color: Color
+var _default_emission_energy := 0.0
 var _afterimages: Array[Dictionary] = []
 var _current_slash_hit: bool = false
+var _suppress_charge_gain: bool = false
 
 
 func _ready() -> void:
@@ -34,14 +38,17 @@ func _ready() -> void:
 
 	health = max_health
 	health_changed.emit(health)
+	charge_changed.emit(charge_points, hits_per_charge)
 
 	_sword_material = _resolve_sword_material()
 	_default_blade_color = _sword_material.albedo_color
+	_default_emission_energy = _sword_material.emission_energy_multiplier
 
 	sword_vfx.setup(camera, sword_mesh, sword_pivot)
 
 	move_system.move_changed.connect(_on_move_changed)
 	move_system.slash_landed.connect(_on_slash_landed)
+	move_system.charge_check = _can_charge
 	move_animator.animation_finished.connect(_on_animation_finished)
 	move_animator.slash_impact.connect(_on_slash_impact)
 	move_animator.slash_pose_changed.connect(_on_slash_pose_changed)
@@ -70,6 +77,7 @@ func _physics_process(delta: float) -> void:
 
 func _process(delta: float) -> void:
 	sword_vfx.tick(delta)
+	_update_charge_glow()
 
 
 func _toggle_mouse_capture() -> void:
@@ -144,26 +152,45 @@ func _tick_afterimages(delta: float) -> void:
 
 func notify_slash_hit() -> void:
 	_current_slash_hit = true
+	if not _suppress_charge_gain and charge_points < hits_per_charge:
+		charge_points += 1
+		charge_changed.emit(charge_points, hits_per_charge)
+
+
+func _can_charge() -> bool:
+	return charge_points >= hits_per_charge
+
+
+func _update_charge_glow() -> void:
+	if _sword_material == null:
+		return
+	# When charge is ready and we're in idle (not mid-slash/charge), pulse the blade
+	if charge_points >= hits_per_charge and move_system.state == SwordMoveSystem.State.IDLE:
+		var pulse := (sin(Time.get_ticks_msec() * 0.006) * 0.5 + 0.5)
+		var charge_color := Color(0.3, 0.9, 1.0).lerp(Color(0.1, 0.6, 1.0), pulse)
+		_sword_material.albedo_color = charge_color
+		_sword_material.emission_enabled = true
+		_sword_material.emission = charge_color * 0.8
+		_sword_material.emission_energy_multiplier = 1.5 + pulse * 1.5
+	elif move_system.state == SwordMoveSystem.State.IDLE:
+		_sword_material.emission_energy_multiplier = _default_emission_energy
+		_sword_material.emission_enabled = false
 
 
 func _on_move_changed(new_move: SwordMoveSystem.Move) -> void:
 	if new_move == SwordMoveSystem.Move.IDLE:
 		_set_blade_color(_default_blade_color)
-		sword_hitbox.set_active(false)
 		return
 
 	_set_blade_color(SwordMoveSystem.get_move_color(new_move))
 
 	match new_move:
 		SwordMoveSystem.Move.CHARGE:
-			sword_hitbox.set_active(false)
 			_start_move_animation(new_move)
 		SwordMoveSystem.Move.BLOCK:
 			_start_move_animation(new_move)
 		_:
-			sword_hitbox.set_active(move_system.is_hitbox_active())
 			if move_system.is_slash_move(new_move):
-				sword_hitbox.set_slash_lane(_slash_lane_for_move(new_move))
 				_start_move_animation(new_move)
 
 
@@ -192,32 +219,19 @@ func _on_animation_finished(finished_move: SwordMoveSystem.Move, snapshot: Dicti
 		sword_vfx.reset_camera_pose()
 	_pivot_rotation = _current_pivot_rotation()
 
-	if move_system.is_slash_move(finished_move) and not _current_slash_hit:
-		_trigger_whiff_miss()
+	if move_system.is_slash_move(finished_move):
+		call_deferred("_check_whiff_miss")
 
 	move_system.notify_animation_finished(finished_move, snapshot)
 
 
+func _check_whiff_miss() -> void:
+	if not _current_slash_hit:
+		_trigger_whiff_miss()
+
+
 func _trigger_whiff_miss() -> void:
-	var label := Label3D.new()
-	var forward := -camera.global_transform.basis.z
-	label.global_position = camera.global_position + forward * 2.2 + Vector3(randf_range(-0.2, 0.2), randf_range(-0.1, 0.15), 0)
-	label.text = "MISS"
-	label.font = font
-	label.font_size = 42
-	label.pixel_size = 0.007
-	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	label.modulate = Color(0.7, 0.8, 0.9, 0.8)
-	label.outline_render_priority = 1
-	label.outline_size = 6
-	label.outline_modulate = Color(0, 0, 0, 0.8)
-
-	get_tree().current_scene.add_child(label)
-
-	var tween := get_tree().create_tween().set_parallel(true)
-	tween.tween_property(label, "global_position:y", label.global_position.y + 0.6, 0.45).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	tween.tween_property(label, "modulate:a", 0.0, 0.45).set_delay(0.1)
-	tween.chain().tween_callback(label.queue_free)
+	DamageLabel.show_miss(get_tree().current_scene, camera)
 
 func _on_slash_landed(snapshot: Dictionary) -> void:
 	print(
@@ -233,6 +247,18 @@ func _on_slash_landed(snapshot: Dictionary) -> void:
 
 func _on_slash_impact(slash_move: SwordMoveSystem.Move, _snapshot: Dictionary) -> void:
 	sword_vfx.on_slash_impact(SwordMoveSystem.get_move_color(slash_move))
+	_try_hit_enemies(_slash_lane_for_move(slash_move))
+
+
+func _try_hit_enemies(lane: String) -> void:
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if not enemy is Node3D:
+			continue
+		var dist := global_position.distance_to(enemy.global_position)
+		if dist > SWORD_RANGE:
+			continue
+		if enemy.has_method("take_hit"):
+			enemy.take_hit(lane)
 
 
 func _on_slash_pose_changed(progress: float, direction: Vector2) -> void:
@@ -244,19 +270,38 @@ func _on_charge_pose_changed(progress: float) -> void:
 
 
 func _fire_charged_projectile(slash_move: SwordMoveSystem.Move) -> void:
-	var projectile := ChargedProjectile.new()
+	charge_points = 0
+	charge_changed.emit(charge_points, hits_per_charge)
 
+	# Find nearest enemy and hit it directly.
+	var best_enemy: Node3D = null
+	var best_dist := INF
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if enemy is Node3D:
+			var d := global_position.distance_to(enemy.global_position)
+			if d < best_dist:
+				best_dist = d
+				best_enemy = enemy
+
+	if best_enemy != null and best_enemy.has_method("take_hit"):
+		var lane: String = best_enemy.get("spawn_lane") if "spawn_lane" in best_enemy else "center"
+		_suppress_charge_gain = true
+		best_enemy.take_hit(lane, 3)
+		_suppress_charge_gain = false
+		_current_slash_hit = true
+
+	# Spawn the visual projectile aimed at the target (or straight forward).
+	var projectile := ChargedProjectile.new()
 	var collider := CollisionShape3D.new()
 	var shape := BoxShape3D.new()
 	shape.size = PROJECTILE_COLLIDER_SIZE
 	collider.shape = shape
 	projectile.add_child(collider)
-
 	get_tree().current_scene.add_child(projectile)
 	var direction := _projectile_direction_for_slash(slash_move)
 	var spawn_origin := global_position + Vector3.UP * 1.0
 	projectile.global_position = spawn_origin + direction * PROJECTILE_OFFSET
-	projectile.launch(direction, _slash_lane_for_move(slash_move))
+	projectile.launch(direction, "center")
 
 
 func _slash_lane_for_move(slash_move: SwordMoveSystem.Move) -> String:
@@ -277,26 +322,24 @@ func _projectile_direction_for_slash(slash_move: SwordMoveSystem.Move) -> Vector
 	forward = forward.normalized()
 	right = right.normalized()
 
-	var spawn_dist := 8.0
-	var side_offset := 3.0
-	var spawner := get_tree().current_scene.get_node_or_null("EnemySpawner")
-	if spawner != null:
-		if "spawn_distance" in spawner:
-			spawn_dist = spawner.spawn_distance
-		if "side_lane_offset" in spawner:
-			side_offset = spawner.side_lane_offset
+	# Aim at the nearest living enemy, regardless of lane.
+	var best_enemy: Node3D = null
+	var best_dist_sq := INF
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if enemy is Node3D:
+			var d := global_position.distance_squared_to(enemy.global_position)
+			if d < best_dist_sq:
+				best_dist_sq = d
+				best_enemy = enemy
 
-	var lane_offset := 0.0
-	match slash_move:
-		SwordMoveSystem.Move.SLASH_LEFT:
-			lane_offset = -side_offset
-		SwordMoveSystem.Move.SLASH_RIGHT:
-			lane_offset = side_offset
-		_:
-			lane_offset = 0.0
+	if best_enemy != null:
+		var to_enemy := best_enemy.global_position - global_position
+		to_enemy.y = 0.0
+		if to_enemy.length_squared() > 0.001:
+			return to_enemy.normalized()
 
-	var direction := forward * spawn_dist + right * lane_offset
-	return direction.normalized()
+	# Fallback: aim straight forward.
+	return forward
 
 
 func _set_blade_color(color: Color) -> void:
@@ -309,11 +352,33 @@ func take_damage(amount: int) -> void:
 
 	health = max(health - amount, 0)
 	health_changed.emit(health)
+
+	# Visual feedback: camera shake + red screen flash
+	sword_vfx.trigger_damage_shake(0.55)
+	_flash_damage_screen()
+
 	if health <= 0:
 		died.emit()
 		set_process(false)
 		set_physics_process(false)
 		set_process_input(false)
+
+
+func _flash_damage_screen() -> void:
+	# Create a full-screen red flash overlay using a CanvasLayer + ColorRect
+	var canvas := CanvasLayer.new()
+	canvas.layer = 100
+	add_child(canvas)
+
+	var rect := ColorRect.new()
+	rect.color = Color(0.8, 0.05, 0.0, 0.45)
+	rect.anchors_preset = Control.PRESET_FULL_RECT
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(rect)
+
+	var tween := get_tree().create_tween()
+	tween.tween_property(rect, "color:a", 0.0, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_callback(canvas.queue_free)
 
 
 func get_current_state_name() -> String:

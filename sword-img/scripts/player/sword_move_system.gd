@@ -62,6 +62,7 @@ var _peak_speed := 0.0
 var _tracking_slash := false
 var _pending_move: Move = Move.IDLE
 var _charged := false
+var charge_check: Callable = Callable()
 
 
 static func get_display_name(sword_move: Move) -> String:
@@ -123,7 +124,8 @@ func update_gestures(
 		return
 
 	if blocking_input and _pending_move == Move.IDLE and state != State.CHARGED:
-		_commit_move(Move.CHARGE)
+		if charge_check.is_valid() and charge_check.call():
+			_commit_move(Move.CHARGE)
 		return
 
 	var speed := rotation_delta.length() / maxf(delta, 0.0001)
@@ -187,7 +189,8 @@ func _try_commit_slash() -> void:
 		slash_move = Move.SLASH_DOWN
 	elif direction.y <= -settings.cardinal_precision:
 		if state != State.CHARGED:
-			_commit_move(Move.CHARGE)
+			if charge_check.is_valid() and charge_check.call():
+				_commit_move(Move.CHARGE)
 		else:
 			_reset_slash_tracking()
 		return

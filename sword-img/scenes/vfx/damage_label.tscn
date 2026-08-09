@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://mcaivd0subc6"]
+
+[ext_resource type="Script" uid="uid://biba3nl766rqs" path="res://scripts/vfx/damage_label.gd" id="1_damage_label"]
+
+[node name="DamageLabel" type="Label3D"]
+script = ExtResource("1_damage_label")

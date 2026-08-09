@@ -3,6 +3,8 @@ extends Node
 
 var _enemy: BasicEnemy
 
+var _recovering_from_hit: bool = false
+
 func setup(enemy: BasicEnemy) -> void:
 	_enemy = enemy
 
@@ -13,24 +15,39 @@ func update(delta: float, player: Node3D) -> bool:
 	_face_player(player)
 	_apply_gravity(delta)
 
+	var direction := player.global_position - _enemy.global_position
+	direction.y = 0.0
+	var distance := direction.length()
+
 	if _enemy._stagger_timer > 0.0:
+		_recovering_from_hit = true
 		_handle_stagger(delta)
 		return true
 
-	var direction := player.global_position - _enemy.global_position
-	direction.y = 0.0
+	var min_stop := _enemy.attack_range * 0.6
+	if distance < min_stop and distance > 0.01:
+		var push_out := direction.normalized() * -1.0
+		_enemy.velocity.x = push_out.x * _enemy.speed * 2.0
+		_enemy.velocity.z = push_out.z * _enemy.speed * 2.0
+		_enemy.move_and_slide()
+		return false
 
-	var distance_sq := direction.length_squared()
 	var stop_distance := _enemy.attack_range + _enemy.attack_stop_buffer
-	if distance_sq <= stop_distance * stop_distance:
+	if distance <= stop_distance:
+		_recovering_from_hit = false
 		_stop(delta)
 		return false
 
-	_enemy._is_idling_before_attack = false
-	direction = direction.normalized()
-	_enemy.velocity.x = direction.x * _enemy.speed
-	_enemy.velocity.z = direction.z * _enemy.speed
+	_enemy._combat._is_idling_before_attack = false
+	var dir_norm := direction / distance
+
+	var approach_factor := clampf((distance - stop_distance) / 2.0, 0.2, 1.0)
+	var chase_speed := _enemy.speed * approach_factor
+
+	_enemy.velocity.x = dir_norm.x * chase_speed
+	_enemy.velocity.z = dir_norm.z * chase_speed
 	_enemy.move_and_slide()
+	_recovering_from_hit = false
 	return true
 
 func _face_player(player: Node3D) -> void:
@@ -46,11 +63,11 @@ func _apply_gravity(delta: float) -> void:
 		_enemy.velocity.y = 0.0
 
 func _handle_stagger(delta: float) -> void:
-	_enemy.velocity.x = move_toward(_enemy.velocity.x, 0.0, _enemy.speed * 4.0 * delta)
-	_enemy.velocity.z = move_toward(_enemy.velocity.z, 0.0, _enemy.speed * 4.0 * delta)
+	_enemy.velocity.x = move_toward(_enemy.velocity.x, 0.0, _enemy.speed * 3.0 * delta)
+	_enemy.velocity.z = move_toward(_enemy.velocity.z, 0.0, _enemy.speed * 3.0 * delta)
 	_enemy.move_and_slide()
 
 func _stop(delta: float) -> void:
-	_enemy.velocity.x = move_toward(_enemy.velocity.x, 0.0, _enemy.speed * delta)
-	_enemy.velocity.z = move_toward(_enemy.velocity.z, 0.0, _enemy.speed * delta)
+	_enemy.velocity.x = move_toward(_enemy.velocity.x, 0.0, _enemy.speed * 8.0 * delta)
+	_enemy.velocity.z = move_toward(_enemy.velocity.z, 0.0, _enemy.speed * 8.0 * delta)
 	_enemy.move_and_slide()

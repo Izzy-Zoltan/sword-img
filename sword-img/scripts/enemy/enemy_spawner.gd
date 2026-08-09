@@ -37,6 +37,7 @@ func _spawn_enemy() -> void:
 	enemy.global_position = _spawn_position(lane)
 	if "spawn_lane" in enemy:
 		enemy.spawn_lane = lane
+	enemy.add_to_group("enemies")
 	_active_enemies += 1
 	_spawned_total += 1
 	if enemy.has_signal("died"):

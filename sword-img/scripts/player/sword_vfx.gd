@@ -63,6 +63,11 @@ func trigger_impact_shake(intensity: float = 0.35) -> void:
 	_trauma = clampf(_trauma + intensity, 0.0, 1.0)
 
 
+func trigger_damage_shake(intensity: float = 0.5) -> void:
+	# Stronger, more violent shake for taking damage
+	_trauma = clampf(_trauma + intensity, 0.0, 1.2)
+
+
 func trigger_hitstop(duration: float = 0.05) -> void:
 	Engine.time_scale = 0.05
 	if camera != null and camera.is_inside_tree():
