@@ -57,6 +57,9 @@ func _ready() -> void:
 	_movement.setup(self)
 
 func _physics_process(delta: float) -> void:
+	_update_timers(delta)
+	_combat.update_hit_flash(delta)
+
 	if _is_dying:
 		return
 
@@ -73,7 +76,15 @@ func _physics_process(delta: float) -> void:
 		_animator.play_run()
 		return
 
-	_combat.update(delta, player)
+	_combat.update(player)
+
+func _update_timers(delta: float) -> void:
+	_hit_cooldown = maxf(_hit_cooldown - delta, 0.0)
+	_attack_timer = maxf(_attack_timer - delta, 0.0)
+	_windup_timer = maxf(_windup_timer - delta, 0.0)
+	_idle_timer = maxf(_idle_timer - delta, 0.0)
+	_pre_attack_idle_timer = maxf(_pre_attack_idle_timer - delta, 0.0)
+	_stagger_timer = maxf(_stagger_timer - delta, 0.0)
 
 func _get_player() -> Node3D:
 	return get_tree().current_scene.get_node_or_null("Player") as Node3D
