@@ -219,15 +219,6 @@ func _trigger_whiff_miss() -> void:
 	tween.tween_property(label, "modulate:a", 0.0, 0.45).set_delay(0.1)
 	tween.chain().tween_callback(label.queue_free)
 
-	var audio_player := AudioStreamPlayer3D.new()
-	audio_player.global_position = camera.global_position + forward * 1.8
-	audio_player.stream = BasicEnemy._get_miss_audio()
-	audio_player.pitch_scale = randf_range(0.95, 1.1)
-	get_tree().current_scene.add_child(audio_player)
-	audio_player.play()
-	audio_player.finished.connect(audio_player.queue_free)
-
-
 func _on_slash_landed(snapshot: Dictionary) -> void:
 	print(
 		"Slash finished | move: %s | speed: %.2f | angle: %.2f | axis: %s | charged: %s" % [

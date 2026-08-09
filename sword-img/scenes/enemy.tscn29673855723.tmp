@@ -10,17 +10,7 @@ radius = 0.45
 
 [node name="BasicEnemy" type="CharacterBody3D"]
 script = ExtResource("1_enemy_script")
-speed = null
 max_health = 2
-gravity = null
-attack_range = null
-attack_stop_buffer = null
-attack_damage = null
-attack_cooldown = null
-attack_windup = null
-idle_before_attack = null
-idle_between_attacks = null
-spawn_lane = null
 
 [node name="GoblinModel" parent="." instance=ExtResource("1_goblin_model")]
 transform = Transform3D(0.75, 0, 0, 0, 0.75, 0, 0, 0, 0.75, 0, 0, 0)

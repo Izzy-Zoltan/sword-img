@@ -13,14 +13,19 @@ signal died
 @export var attack_windup: float = 0.35
 @export var idle_before_attack: float = 0.2
 @export var idle_between_attacks: float = 0.2
-@onready var font = load("res://Assets/PixelifySans-Bold.ttf")
 
+@onready var font = load("res://Assets/PixelifySans-Bold.ttf")
+@onready var hurt_area: Area3D = $HurtArea
+@onready var _animation_player: AnimationPlayer = $GoblinModel/AnimationPlayer
+
+@onready var _goblin_mesh: MeshInstance3D = $GoblinModel/Armature/Skeleton3D/Cube_002
+
+var _mesh_material: StandardMaterial3D
 
 @export_enum("left", "center", "right") var spawn_lane := "center"
 
 var _health: int
 var _hit_cooldown: float = 0.0
-var _animation_player: AnimationPlayer
 var _attack_timer: float = 0.0
 var _windup_timer: float = 0.0
 var _idle_timer: float = 0.0
@@ -28,138 +33,19 @@ var _pre_attack_idle_timer: float = 0.0
 var _is_winding_up: bool = false
 var _is_idling_before_attack: bool = false
 
-var _mesh_material: StandardMaterial3D
 var _flash_timer: float = 0.0
 var _stagger_timer: float = 0.0
 var _is_dying: bool = false
 
-static var _cached_hit_audio: AudioStreamWAV = null
-static var _cached_death_audio: AudioStreamWAV = null
-static var _cached_miss_audio: AudioStreamWAV = null
-
-
-static func _get_hit_audio() -> AudioStreamWAV:
-	if _cached_hit_audio != null:
-		return _cached_hit_audio
-
-	var sample_rate := 22050
-	var duration := 0.14
-	var num_samples := int(sample_rate * duration)
-	var pcm_data := PackedByteArray()
-	pcm_data.resize(num_samples)
-
-	for i in range(num_samples):
-		var t := float(i) / float(sample_rate)
-		var env := exp(-t * 26.0)
-		var freq := 240.0 * exp(-t * 18.0) + 50.0
-		var sine_val := sin(t * freq * TAU)
-		var noise_val := randf_range(-1.0, 1.0)
-		var mixed := (sine_val * 0.4 + noise_val * 0.6) * env
-		var byte_val := int(clampf((mixed * 0.5 + 0.5) * 255.0, 0.0, 255.0))
-		pcm_data[i] = byte_val
-
-	var stream := AudioStreamWAV.new()
-	stream.format = AudioStreamWAV.FORMAT_8_BITS
-	stream.mix_rate = sample_rate
-	stream.data = pcm_data
-	_cached_hit_audio = stream
-	return _cached_hit_audio
-
-
-static func _get_death_audio() -> AudioStreamWAV:
-	if _cached_death_audio != null:
-		return _cached_death_audio
-
-	var sample_rate := 22050
-	var duration := 0.25
-	var num_samples := int(sample_rate * duration)
-	var pcm_data := PackedByteArray()
-	pcm_data.resize(num_samples)
-
-	for i in range(num_samples):
-		var t := float(i) / float(sample_rate)
-		var env := exp(-t * 14.0)
-		var freq := 450.0 * exp(-t * 10.0) + 60.0
-		var sine_val := sin(t * freq * TAU)
-		var noise_val := randf_range(-1.0, 1.0)
-		var mixed := (sine_val * 0.3 + noise_val * 0.7) * env
-		var byte_val := int(clampf((mixed * 0.5 + 0.5) * 255.0, 0.0, 255.0))
-		pcm_data[i] = byte_val
-
-	var stream := AudioStreamWAV.new()
-	stream.format = AudioStreamWAV.FORMAT_8_BITS
-	stream.mix_rate = sample_rate
-	stream.data = pcm_data
-	_cached_death_audio = stream
-	return _cached_death_audio
-
-
-static func _get_miss_audio() -> AudioStreamWAV:
-	if _cached_miss_audio != null:
-		return _cached_miss_audio
-
-	var sample_rate := 22050
-	var duration := 0.18
-	var num_samples := int(sample_rate * duration)
-	var pcm_data := PackedByteArray()
-	pcm_data.resize(num_samples)
-
-	for i in range(num_samples):
-		var t := float(i) / float(sample_rate)
-		var env := sin(t / duration * PI)
-		var noise_val := randf_range(-1.0, 1.0)
-		var sine_val := sin(t * (130.0 - t * 450.0) * TAU)
-		var mixed := (noise_val * 0.75 + sine_val * 0.25) * env * 0.4
-		var byte_val := int(clampf((mixed * 0.5 + 0.5) * 255.0, 0.0, 255.0))
-		pcm_data[i] = byte_val
-
-	var stream := AudioStreamWAV.new()
-	stream.format = AudioStreamWAV.FORMAT_8_BITS
-	stream.mix_rate = sample_rate
-	stream.data = pcm_data
-	_cached_miss_audio = stream
-	return _cached_miss_audio
-
-
 func _ready() -> void:
 	_health = max_health
-	_animation_player = _find_animation_player(self)
+
 	floor_stop_on_slope = true
-	if has_node("HurtArea"):
-		$HurtArea.area_entered.connect(_on_area_entered)
 
-	var mesh_instance := _find_mesh_instance(self)
-	if mesh_instance != null:
-		_mesh_material = StandardMaterial3D.new()
-		_mesh_material.albedo_color = Color(1.0, 0.2, 0.2)
-		_mesh_material.emission_enabled = true
-		_mesh_material.emission = Color(0.55, 0.1, 0.1)
-		mesh_instance.material_override = _mesh_material
+	_mesh_material = _goblin_mesh.get_active_material(0).duplicate()
+	_goblin_mesh.set_surface_override_material(0, _mesh_material)
 
-
-func _find_mesh_instance(node: Node) -> MeshInstance3D:
-	if node is MeshInstance3D:
-		return node as MeshInstance3D
-
-	for child in node.get_children():
-		var found := _find_mesh_instance(child)
-		if found != null:
-			return found
-
-	return null
-
-
-func _find_animation_player(node: Node) -> AnimationPlayer:
-	if node is AnimationPlayer:
-		return node as AnimationPlayer
-
-	for child in node.get_children():
-		var found := _find_animation_player(child)
-		if found != null:
-			return found
-
-	return null
-
+	$HurtArea.area_entered.connect(_on_area_entered)
 
 func _play_run_animation() -> void:
 	if _animation_player == null:
@@ -358,7 +244,6 @@ func _take_damage(amount: int) -> void:
 
 	_spawn_hit_sparks(global_position + Vector3(0, 1.0, 0), push_dir)
 	_spawn_damage_text(global_position + Vector3(0, 1.0, 0), amount, _health <= 0)
-	_play_hit_sound(false)
 
 	if player != null:
 		var sword_vfx := player.get_node_or_null("Camera3D/SwordVFX")
@@ -396,18 +281,6 @@ func _spawn_miss_particles(pos: Vector3) -> void:
 	var timer := get_tree().create_timer(0.5)
 	timer.timeout.connect(particles.queue_free)
 
-
-func _play_miss_sound() -> void:
-	var audio_player := AudioStreamPlayer3D.new()
-	audio_player.global_position = global_position
-	audio_player.stream = _get_miss_audio()
-	audio_player.unit_size = 12.0
-	audio_player.pitch_scale = randf_range(0.95, 1.15)
-	get_tree().current_scene.add_child(audio_player)
-	audio_player.play()
-	audio_player.finished.connect(audio_player.queue_free)
-
-
 func _die() -> void:
 	if _is_dying:
 		return
@@ -419,7 +292,6 @@ func _die() -> void:
 		push_dir = (global_position - player.global_position).normalized()
 
 	_spawn_death_sparks(global_position + Vector3(0, 1.0, 0), push_dir)
-	_play_hit_sound(true)
 
 	var goblin_model := get_node_or_null("GoblinModel")
 	if goblin_model != null:
@@ -514,14 +386,3 @@ func _spawn_damage_text(pos: Vector3, damage: int, is_fatal: bool) -> void:
 	tween.chain().tween_property(label, "scale", Vector3.ONE, 0.45)
 	tween.tween_property(label, "modulate:a", 0.0, 0.55).set_delay(0.12)
 	tween.chain().tween_callback(label.queue_free)
-
-
-func _play_hit_sound(is_fatal: bool) -> void:
-	var audio_player := AudioStreamPlayer3D.new()
-	audio_player.global_position = global_position
-	audio_player.stream = _get_death_audio() if is_fatal else _get_hit_audio()
-	audio_player.unit_size = 15.0
-	audio_player.pitch_scale = randf_range(0.9, 1.15) if not is_fatal else randf_range(0.75, 0.9)
-	get_tree().current_scene.add_child(audio_player)
-	audio_player.play()
-	audio_player.finished.connect(audio_player.queue_free)
