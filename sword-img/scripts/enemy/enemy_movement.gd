@@ -1,13 +1,13 @@
 class_name EnemyMovement
 extends Node
 
-var _enemy: CharacterBody3D
+var _enemy: BasicEnemy
 
-func setup(enemy: CharacterBody3D) -> void:
+func setup(enemy: BasicEnemy) -> void:
 	_enemy = enemy
 
 func update(delta: float, player: Node3D) -> bool:
-	if _enemy == null or player == null:
+	if player == null:
 		return false
 
 	_face_player(player)
