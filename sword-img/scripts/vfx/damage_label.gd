@@ -44,21 +44,25 @@ static func show_miss(parent: Node, camera: Camera3D) -> void:
 static func _spawn(
 	parent: Node,
 	pos: Vector3,
+	p_text: String,
+	p_font_size: int,
+	p_pixel_size: float,
 	color: Color,
+	p_outline_size: int,
 	rise_amount: float,
 	duration: float,
 	fade_delay: float,
 	scale_pop: bool = true
 ) -> void:
 	var label := DamageLabel.new()
-	label.text = text
+	label.text = p_text
 	label.font = _FONT
-	label.font_size = font_size
-	label.pixel_size = pixel_size
-	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.font_size = p_font_size
+	label.pixel_size = p_pixel_size
 	label.modulate = color
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	label.outline_render_priority = 1
-	label.outline_size = outline_size
+	label.outline_size = p_outline_size
 	label.outline_modulate = Color(0.0, 0.0, 0.0, 1.0)
 
 	parent.add_child(label)

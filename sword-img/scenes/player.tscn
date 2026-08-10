@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://nc52v1wy208o"]
+[gd_scene load_steps=11 format=3 uid="uid://nc52v1wy208o"]
 
 [ext_resource type="Script" uid="uid://bsqhomu5x2qn4" path="res://scripts/player/sword_controller.gd" id="1_controller"]
 [ext_resource type="Script" uid="uid://dakw1k8eouk3g" path="res://scripts/input/mouse_sword_input.gd" id="2_mouse_input"]
@@ -7,6 +7,9 @@
 [ext_resource type="Script" uid="uid://5kbqx2bccy0l" path="res://scripts/player/sword_move_animator.gd" id="4_move_animator"]
 [ext_resource type="Script" uid="uid://cfrvsws0ech6q" path="res://scripts/player/sword_vfx.gd" id="6_sword_vfx"]
 [ext_resource type="Resource" path="res://resources/combat_settings.tres" id="7_combat_settings"]
+[ext_resource type="Script" path="res://scripts/player/sword_health.gd" id="8_sword_health"]
+[ext_resource type="Script" path="res://scripts/player/sword_charge.gd" id="9_sword_charge"]
+[ext_resource type="Script" path="res://scripts/player/sword_hit_detection.gd" id="10_sword_hit_detection"]
 
 [node name="Player" type="Node3D"]
 script = ExtResource("1_controller")
@@ -38,3 +41,12 @@ script = ExtResource("2_mouse_input")
 [node name="SwordMoveSystem" type="Node" parent="."]
 script = ExtResource("3_move_system")
 settings = ExtResource("7_combat_settings")
+
+[node name="SwordHealth" type="Node" parent="."]
+script = ExtResource("8_sword_health")
+
+[node name="SwordCharge" type="Node" parent="."]
+script = ExtResource("9_sword_charge")
+
+[node name="SwordHitDetection" type="Node" parent="."]
+script = ExtResource("10_sword_hit_detection")

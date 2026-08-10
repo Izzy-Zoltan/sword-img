@@ -5,7 +5,7 @@ const HitSparksScene := preload("res://scenes/vfx/hit_sparks.tscn")
 const DeathSparksScene := preload("res://scenes/vfx/death_sparks.tscn")
 const DamageLabelScene := preload("res://scenes/vfx/damage_label.tscn")
 
-var _enemy: BasicEnemy
+var _enemy: EnemyController
 var _animator: EnemyAnimator
 
 var _health: int = 0
@@ -17,7 +17,7 @@ var _pre_attack_idle_timer: float = 0.0
 var _is_winding_up: bool = false
 var _is_idling_before_attack: bool = false
 
-func setup(enemy: BasicEnemy, animator: EnemyAnimator, _mesh: MeshInstance3D) -> void:
+func setup(enemy: EnemyController, animator: EnemyAnimator, _mesh: MeshInstance3D) -> void:
 	_enemy = enemy
 	_animator = animator
 	_health = enemy.max_health
@@ -96,9 +96,8 @@ func _take_damage(amount: int) -> void:
 		return
 
 	_health -= amount
-	_enemy._stagger_timer = 0.22
+	_enemy._stagger_timer = 0.2
 
-	# Reset attack state so it must restart windup after recovering
 	_is_winding_up = false
 	_is_idling_before_attack = false
 
@@ -126,11 +125,8 @@ func _take_damage(amount: int) -> void:
 	else:
 		DamageLabel.show_damage(scene_root, label_pos, amount)
 
-	if player != null:
-		var sword_vfx := player.get_node_or_null("Camera3D/SwordVFX")
-		if sword_vfx != null and sword_vfx.has_method("trigger_impact_shake"):
-			sword_vfx.trigger_impact_shake(0.4)
-			sword_vfx.trigger_hitstop(0.06)
+	if player != null and player.has_method("on_hit_landed"):
+		player.on_hit_landed()
 
 	if _health <= 0:
 		_die()

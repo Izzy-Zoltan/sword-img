@@ -1,11 +1,11 @@
 class_name EnemyMovement
 extends Node
 
-var _enemy: BasicEnemy
+var _enemy: EnemyController
 
 var _recovering_from_hit: bool = false
 
-func setup(enemy: BasicEnemy) -> void:
+func setup(enemy: EnemyController) -> void:
 	_enemy = enemy
 
 func update(delta: float, player: Node3D) -> bool:

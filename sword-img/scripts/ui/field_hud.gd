@@ -9,7 +9,7 @@ var move_system: SwordMoveSystem
 func _ready() -> void:
 	move_system = player.get_node("SwordMoveSystem") as SwordMoveSystem
 	move_system.state_changed.connect(_on_state_changed)
-	player.health_changed.connect(_on_health_changed)
+	player.connect("health_changed", _on_health_changed)
 	_on_state_changed(move_system.state)
 	_on_health_changed(_get_player_health())
 

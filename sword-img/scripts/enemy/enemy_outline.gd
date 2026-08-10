@@ -12,10 +12,12 @@ const BLEND_SPEED_OUT := 4.0
 const COLOR_DEFAULT := Color(0.05, 0.2, 0.05, 0.8)
 const COLOR_IN_RANGE := Color(1.0, 1.0, 1.0, 1.0)
 const COLOR_HIT := Color(1.0, 0.85, 0.2, 1.0)
+const COLOR_ATTACKING := Color(1.0, 0.1, 0.05, 1.0)
 
 const GLOW_DEFAULT := 2.0
 const GLOW_IN_RANGE := 2.5
 const GLOW_HIT := 5.0
+const GLOW_ATTACKING := 3.5
 
 const SCALE_DEFAULT := 1.03
 const SCALE_IN_RANGE := 1.03
@@ -23,12 +25,12 @@ const SCALE_HIT := 1.05
 
 var _material: ShaderMaterial
 var _meshes: Array[MeshInstance3D] = []
-var _enemy: BasicEnemy
+var _enemy: EnemyController
 var _range_blend := 0.0
 var _hit_timer := 0.0
 
 
-func setup(enemy: BasicEnemy, model_root: Node3D) -> void:
+func setup(enemy: EnemyController, model_root: Node3D) -> void:
 	_enemy = enemy
 	_material = _create_material()
 	_build_outline_meshes(model_root)
@@ -93,10 +95,19 @@ func _add_outline_for(original: MeshInstance3D) -> void:
 
 func _sync_visuals() -> void:
 	var hit_ratio := clampf(_hit_timer / HIT_FLASH_DURATION, 0.0, 1.0)
+	var is_attacking := _enemy._combat._is_winding_up or _enemy._combat._is_idling_before_attack
 
-	var base_color := COLOR_DEFAULT.lerp(COLOR_IN_RANGE, _range_blend)
+	var base_color: Color
+	var base_glow: float
+	if is_attacking and hit_ratio <= 0.0:
+		base_color = COLOR_ATTACKING
+		base_glow = GLOW_ATTACKING
+	else:
+		base_color = COLOR_DEFAULT.lerp(COLOR_IN_RANGE, _range_blend)
+		base_glow = lerpf(GLOW_DEFAULT, GLOW_IN_RANGE, _range_blend)
+
 	var color := base_color.lerp(COLOR_HIT, hit_ratio)
-	var glow := lerpf(lerpf(GLOW_DEFAULT, GLOW_IN_RANGE, _range_blend), GLOW_HIT, hit_ratio)
+	var glow := lerpf(base_glow, GLOW_HIT, hit_ratio)
 	_material.set_shader_parameter("outline_color", color)
 	_material.set_shader_parameter("glow_intensity", glow)
 

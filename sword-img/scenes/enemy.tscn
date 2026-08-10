@@ -1,14 +1,14 @@
 [gd_scene load_steps=4 format=3 uid="uid://d4n0k2k7j8r1m"]
 
-[ext_resource type="Script" uid="uid://bkcni225738ml" path="res://scripts/enemy/basic_enemy.gd" id="1_enemy_script"]
+[ext_resource type="Script" uid="uid://bkcni225738ml" path="res://scripts/enemy/enemy_controller.gd" id="1_enemy_script"]
 [ext_resource type="PackedScene" uid="uid://bnym37as8eolv" path="res://Assets/Goblin.glb" id="1_goblin_model"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_enemy"]
 radius = 0.45
 
-[node name="BasicEnemy" type="CharacterBody3D"]
+[node name="Enemy" type="CharacterBody3D"]
 script = ExtResource("1_enemy_script")
-speed = 5.0
+speed = 7.0
 max_health = 3
 
 [node name="GoblinModel" parent="." instance=ExtResource("1_goblin_model")]

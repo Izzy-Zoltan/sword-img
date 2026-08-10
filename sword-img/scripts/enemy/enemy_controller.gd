@@ -1,4 +1,4 @@
-class_name BasicEnemy
+class_name EnemyController
 extends CharacterBody3D
 
 const EnemyAnimatorScript = preload("res://scripts/enemy/enemy_animator.gd")
@@ -6,14 +6,14 @@ const EnemyCombatScript = preload("res://scripts/enemy/enemy_combat.gd")
 const EnemyMovementScript = preload("res://scripts/enemy/enemy_movement.gd")
 const EnemyOutlineScript = preload("res://scripts/enemy/enemy_outline.gd")
 
-@export var speed: float = 2.2
+@export var speed: float = 2
 @export var max_health: int = 1
 @export var gravity: float = 20.0
 @export var attack_range: float = 3.0
-@export var attack_stop_buffer: float = 0.6
+@export var attack_stop_buffer: float = 0.3
 @export var attack_damage: int = 1
-@export var attack_cooldown: float = 1.2
-@export var attack_windup: float = 0.35
+@export var attack_cooldown: float = 0.3
+@export var attack_windup: float = 0.6
 @export var idle_before_attack: float = 0.2
 @export var idle_between_attacks: float = 0.2
 @export_enum("left", "center", "right") var spawn_lane := "center"
@@ -21,6 +21,7 @@ const EnemyOutlineScript = preload("res://scripts/enemy/enemy_outline.gd")
 @onready var _animation_player: AnimationPlayer = $GoblinModel/AnimationPlayer
 @onready var _goblin_mesh: MeshInstance3D = $GoblinModel/Armature/Skeleton3D/Cube_002
 
+@warning_ignore("unused_signal")
 signal died
 
 var _stagger_timer: float = 0.0
@@ -53,11 +54,16 @@ func _physics_process(delta: float) -> void:
 	_update_timers(delta)
 	_outline.update(delta)
 
+	if not is_on_floor():
+		velocity.y -= gravity * delta
+
 	if _is_dying:
+		move_and_slide()
 		return
 
 	var player := _get_player()
 	if player == null:
+		move_and_slide()
 		_animator.play_idle()
 		return
 
