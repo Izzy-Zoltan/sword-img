@@ -25,6 +25,18 @@ static func show_fatal(parent: Node, pos: Vector3) -> void:
 		0.12
 	)
 
+static func show_critical(parent: Node, pos: Vector3, amount: int) -> void:
+	_spawn(
+		parent, pos,
+		"CRIT! -%d" % amount,
+		52, 0.009,
+		Color(1.0, 0.55, 0.0),
+		5,
+		1.5, 0.65,
+		0.14
+	)
+
+
 static func show_miss(parent: Node, camera: Camera3D) -> void:
 	var forward := -camera.global_transform.basis.z
 	var pos := camera.global_position \

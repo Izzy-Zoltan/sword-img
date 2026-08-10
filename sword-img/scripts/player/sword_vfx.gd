@@ -3,6 +3,7 @@ extends Node
 
 const AFTERIMAGE_FADE_SPEED := 8.0
 const AFTERIMAGE_EMISSION_MULTIPLIER := 2.2
+const SWING_GLOW_INTENSITY := 1.6
 
 @export var settings: SwordCombatSettings
 
@@ -13,10 +14,10 @@ var _sword_material: StandardMaterial3D
 var _default_blade_color: Color
 var _default_emission_energy := 0.7
 var _blade_flash := 0.0
+var _swing_glow := 0.0
 var _afterimages: Array[Dictionary] = []
 var _camera_rest_position := Vector3.ZERO
 var _camera_rest_rotation := Vector3.ZERO
-
 var _trauma: float = 0.0
 
 
@@ -45,7 +46,11 @@ func setup(camera_ref: Camera3D, sword_mesh_ref: Node3D, sword_pivot_ref: Node3D
 
 func tick(delta: float) -> void:
 	_blade_flash = maxf(_blade_flash - delta * AFTERIMAGE_FADE_SPEED, 0.0)
-	_sword_material.emission_energy_multiplier = _default_emission_energy + _blade_flash * AFTERIMAGE_EMISSION_MULTIPLIER
+	_swing_glow = maxf(_swing_glow - delta * 6.0, 0.0)
+
+	var total_glow := _blade_flash * AFTERIMAGE_EMISSION_MULTIPLIER + _swing_glow * SWING_GLOW_INTENSITY
+	_sword_material.emission_energy_multiplier = _default_emission_energy + total_glow
+
 	_tick_afterimages(delta)
 
 	if _trauma > 0.0:
@@ -84,6 +89,23 @@ func reset_blade_color() -> void:
 	_sword_material.albedo_color = _default_blade_color
 
 
+func flash_damage_color() -> void:
+	if not is_inside_tree():
+		return
+	var canvas := CanvasLayer.new()
+	canvas.layer = 100
+	var rect := ColorRect.new()
+	rect.color = Color(0.9, 0.05, 0.0, 0.35)
+	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(rect)
+	get_tree().current_scene.add_child(canvas)
+
+	var tween := get_tree().create_tween()
+	tween.tween_property(rect, "color:a", 0.0, 0.25).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tween.tween_callback(canvas.queue_free)
+
+
 func on_slash_impact(color: Color) -> void:
 	_blade_flash = 1.0
 	_spawn_slash_afterimage(color)
@@ -100,6 +122,11 @@ func on_slash_pose_changed(progress: float, direction: Vector2) -> void:
 		direction.y * settings.slash_camera_tilt * 0.35 * progress,
 		-direction.y * settings.slash_camera_tilt * progress,
 	)
+	_swing_glow = progress
+
+
+func begin_slash_trail(_color: Color) -> void:
+	pass
 
 
 func on_charge_pose_changed(progress: float) -> void:
@@ -121,7 +148,7 @@ func _tick_afterimages(delta: float) -> void:
 		var color := material.albedo_color
 		color.a = settings.slash_afterimage_alpha * life_ratio
 		material.albedo_color = color
-		material.emission_energy_multiplier = 2.0 * material.albedo_color.a
+		material.emission_energy_multiplier = 0.6 * life_ratio
 		if afterimage.life <= 0.0:
 			afterimage.mesh.queue_free()
 			_afterimages.remove_at(index)
@@ -130,12 +157,10 @@ func _tick_afterimages(delta: float) -> void:
 func _find_mesh_instance(node: Node) -> MeshInstance3D:
 	if node is MeshInstance3D:
 		return node as MeshInstance3D
-
 	for child in node.get_children():
 		var found := _find_mesh_instance(child)
 		if found != null:
 			return found
-
 	return null
 
 
@@ -155,7 +180,7 @@ func _spawn_slash_afterimage(color: Color) -> void:
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.emission_enabled = true
 	material.emission = color
-	material.emission_energy_multiplier = 0.9
+	material.emission_energy_multiplier = 0.6
 	material.no_depth_test = true
 	afterimage.material_override = material
 

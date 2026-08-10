@@ -10,7 +10,7 @@ signal all_waves_cleared
 @export_group("Spawning")
 @export var enemy_scene: PackedScene
 @export var spawn_distance: float = 8.0
-@export var side_lane_offset: float = 10.0
+@export var side_lane_offset: float = 7.0
 @export var spawn_spread: float = 3.0
 
 @export_group("Wave Progression")
@@ -24,13 +24,21 @@ signal all_waves_cleared
 @export var max_waves: int = 0
 
 @export_group("Stat Scaling")
-@export var speed_increase_per_wave: float = 0.5
+@export var speed_increase_per_wave: float = 0.75
 @export var health_increase_interval: int = 5
 @export var health_increase_amount: int = 1
-@export var damage_increase_interval: int = 10
+@export var damage_increase_interval: int = 15
 @export var damage_increase_amount: int = 1
 @export var cooldown_reduction_per_wave: float = 0.02
 @export var min_attack_cooldown: float = 0.1
+
+@export_group("Goblin Types")
+@export var blue_unlock_wave: int = 3
+@export var red_unlock_wave: int = 6
+@export var purple_unlock_wave: int = 9
+@export var base_variant_chance: float = 0.15
+@export var variant_chance_increase_per_wave: float = 0.03
+@export var max_variant_chance: float = 0.7
 
 const SPAWN_LANES := ["left", "center", "right"]
 
@@ -120,6 +128,9 @@ func _spawn_enemy() -> void:
 	if "spawn_lane" in enemy:
 		enemy.spawn_lane = lane
 
+	if "goblin_type" in enemy:
+		enemy.goblin_type = _pick_goblin_type()
+
 	_apply_wave_scaling(enemy)
 
 	get_tree().current_scene.add_child(enemy)
@@ -134,8 +145,34 @@ func _spawn_enemy() -> void:
 		enemy.died.connect(_on_enemy_died)
 
 
+func _pick_goblin_type() -> int:
+	if randf() < 0.01:
+		return EnemyController.GoblinType.GOLDEN
+
+	var available_types: Array[int] = []
+
+	if current_wave >= blue_unlock_wave:
+		available_types.append(EnemyController.GoblinType.BLUE)
+	if current_wave >= purple_unlock_wave:
+		available_types.append(EnemyController.GoblinType.PURPLE)
+	if current_wave >= red_unlock_wave:
+		available_types.append(EnemyController.GoblinType.RED)
+
+	if available_types.is_empty():
+		return EnemyController.GoblinType.NORMAL
+
+	var waves_since_first_unlock := current_wave - blue_unlock_wave
+	var chance := base_variant_chance + waves_since_first_unlock * variant_chance_increase_per_wave
+	chance = minf(chance, max_variant_chance)
+
+	if randf() > chance:
+		return EnemyController.GoblinType.NORMAL
+
+	return available_types[randi() % available_types.size()]
+
+
 func _apply_wave_scaling(enemy: Node3D) -> void:
-	var wave_index := current_wave - 1 
+	var wave_index := current_wave - 1
 
 	if "speed" in enemy:
 		enemy.speed += speed_increase_per_wave * wave_index

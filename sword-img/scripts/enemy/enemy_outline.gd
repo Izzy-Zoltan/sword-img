@@ -28,10 +28,12 @@ var _meshes: Array[MeshInstance3D] = []
 var _enemy: EnemyController
 var _range_blend := 0.0
 var _hit_timer := 0.0
+var _base_outline_color: Color = COLOR_DEFAULT
 
 
-func setup(enemy: EnemyController, model_root: Node3D) -> void:
+func setup(enemy: EnemyController, model_root: Node3D, outline_color: Color = COLOR_DEFAULT) -> void:
 	_enemy = enemy
+	_base_outline_color = outline_color
 	_material = _create_material()
 	_build_outline_meshes(model_root)
 
@@ -56,7 +58,7 @@ func _is_in_range() -> bool:
 func _create_material() -> ShaderMaterial:
 	var mat := ShaderMaterial.new()
 	mat.shader = OUTLINE_SHADER
-	mat.set_shader_parameter("outline_color", COLOR_DEFAULT)
+	mat.set_shader_parameter("outline_color", _base_outline_color)
 	mat.set_shader_parameter("glow_intensity", GLOW_DEFAULT)
 	return mat
 
@@ -103,7 +105,7 @@ func _sync_visuals() -> void:
 		base_color = COLOR_ATTACKING
 		base_glow = GLOW_ATTACKING
 	else:
-		base_color = COLOR_DEFAULT.lerp(COLOR_IN_RANGE, _range_blend)
+		base_color = _base_outline_color.lerp(COLOR_IN_RANGE, _range_blend)
 		base_glow = lerpf(GLOW_DEFAULT, GLOW_IN_RANGE, _range_blend)
 
 	var color := base_color.lerp(COLOR_HIT, hit_ratio)

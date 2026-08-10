@@ -120,6 +120,7 @@ func _on_move_changed(new_move: SwordMoveSystem.Move) -> void:
 			_start_move_animation(new_move)
 		_:
 			if move_system.is_slash_move(new_move):
+				sword_vfx.begin_slash_trail(SwordMoveSystem.get_move_color(new_move))
 				_start_move_animation(new_move)
 
 
@@ -195,7 +196,12 @@ func _on_died() -> void:
 
 func take_damage(amount: int) -> void:
 	player_health.take_damage(amount)
-	sword_vfx.trigger_damage_shake(0.55)
+	sword_vfx.trigger_damage_shake(0.8)
+	sword_vfx.trigger_hitstop(0.08)
+	sword_vfx.flash_damage_color()
+	var sm := _get_score_manager()
+	if sm:
+		sm.break_combo()
 
 
 func notify_slash_hit() -> void:
@@ -204,8 +210,27 @@ func notify_slash_hit() -> void:
 
 
 func on_hit_landed() -> void:
-	sword_vfx.trigger_impact_shake(0.4)
-	sword_vfx.trigger_hitstop(0.06)
+	sword_vfx.trigger_impact_shake(0.6)
+	sword_vfx.trigger_hitstop(0.07)
+	var sm := _get_score_manager()
+	if sm:
+		sm.register_hit()
+
+
+func on_crit_landed(score_mult: float = 1.0) -> void:
+	sword_vfx.trigger_impact_shake(0.9)
+	sword_vfx.trigger_hitstop(0.12)
+	var sm := _get_score_manager()
+	if sm:
+		sm.register_crit(score_mult)
+
+
+func on_ko_landed(score_mult: float = 1.0, was_crit: bool = false) -> void:
+	sword_vfx.trigger_impact_shake(1.0)
+	sword_vfx.trigger_hitstop(0.1)
+	var sm := _get_score_manager()
+	if sm:
+		sm.register_kill(score_mult, was_crit)
 
 
 # --- Utility ---
@@ -242,3 +267,7 @@ func _set_blade_color(color: Color) -> void:
 
 func get_current_state_name() -> String:
 	return SwordMoveSystem.get_state_name(move_system.state)
+
+
+func _get_score_manager() -> ScoreManager:
+	return get_tree().current_scene.get_node_or_null("ScoreManager") as ScoreManager

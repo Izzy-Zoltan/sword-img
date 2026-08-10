@@ -58,7 +58,17 @@ func take_hit(source_lane: String, damage: int = 1) -> void:
 	if source_lane != _enemy.spawn_lane:
 		return
 	_hit_cooldown = 0.2
-	_take_damage(damage)
+
+	if _is_winding_up:
+		var max_hp := _enemy.max_health
+		var crit_damage: int
+		if max_hp % 2 == 0:
+			crit_damage = max_hp / 2 + 1
+		else:
+			crit_damage = ceili(float(max_hp) / 2.0)
+		_take_damage(crit_damage, true)
+	else:
+		_take_damage(damage, false)
 
 func _handle_attack(player: Node3D) -> void:
 	if not _is_winding_up:
@@ -89,7 +99,7 @@ func _handle_attack(player: Node3D) -> void:
 
 	_animator.play_attack(true)
 
-func _take_damage(amount: int) -> void:
+func _take_damage(amount: int, is_critical: bool = false) -> void:
 	if _enemy._is_dying:
 		return
 	if not _enemy.is_inside_tree():
@@ -121,15 +131,33 @@ func _take_damage(amount: int) -> void:
 	var label_pos := _enemy.global_position + Vector3(0, 1.0, 0)
 	var scene_root := _enemy.get_tree().current_scene
 	if _health <= 0:
-		DamageLabel.show_fatal(scene_root, label_pos)
+		DamageLabel.show_fatal(scene_root, label_pos + Vector3(0, 0.3, 0))
+		if is_critical:
+			DamageLabel.show_critical(scene_root, label_pos, amount)
+		else:
+			DamageLabel.show_damage(scene_root, label_pos, amount)
+	elif is_critical:
+		DamageLabel.show_critical(scene_root, label_pos, amount)
 	else:
 		DamageLabel.show_damage(scene_root, label_pos, amount)
 
+	var score_mult := _get_score_multiplier()
+
 	if player != null and player.has_method("on_hit_landed"):
-		player.on_hit_landed()
+		if _health <= 0 and player.has_method("on_ko_landed"):
+			player.on_ko_landed(score_mult, is_critical)
+		elif is_critical and player.has_method("on_crit_landed"):
+			player.on_crit_landed(score_mult)
+		else:
+			player.on_hit_landed()
 
 	if _health <= 0:
 		_die()
+
+func _get_score_multiplier() -> float:
+	if _enemy.goblin_type == EnemyController.GoblinType.GOLDEN:
+		return 3.0
+	return 1.0
 
 func _die() -> void:
 	if _enemy._is_dying:

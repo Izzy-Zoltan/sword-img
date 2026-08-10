@@ -1,9 +1,10 @@
-[gd_scene load_steps=9 format=3 uid="uid://cps20g3i3byav"]
+[gd_scene load_steps=10 format=3 uid="uid://cps20g3i3byav"]
 
 [ext_resource type="PackedScene" uid="uid://nc52v1wy208o" path="res://scenes/player.tscn" id="1_player"]
 [ext_resource type="Script" uid="uid://ve1w8h3q6s3o" path="res://scripts/ui/field_hud.gd" id="2_field_hud"]
 [ext_resource type="PackedScene" uid="uid://d4n0k2k7j8r1m" path="res://scenes/enemy.tscn" id="3_enemy"]
-[ext_resource type="Script" path="res://scripts/combat/wave_manager.gd" id="4_wave_manager"]
+[ext_resource type="Script" uid="uid://dos41d16xgc0w" path="res://scripts/combat/wave_manager.gd" id="4_wave_manager"]
+[ext_resource type="Script" path="res://scripts/combat/score_manager.gd" id="5_score_manager"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_floor"]
 size = Vector2(24, 24)
@@ -57,24 +58,9 @@ environment = SubResource("Environment_6pmjc")
 [node name="WaveManager" type="Node" parent="."]
 script = ExtResource("4_wave_manager")
 enemy_scene = ExtResource("3_enemy")
-spawn_distance = 8.0
-side_lane_offset = 5.0
-spawn_spread = 3.0
-base_enemy_count = 3
-enemies_per_wave_increase = 1
-base_max_concurrent = 2
-concurrent_increase_per_wave = 1
-max_concurrent_cap = 8
-spawn_interval = 1.2
-intermission_time = 3.0
-max_waves = 0
-speed_increase_per_wave = 0.5
-health_increase_interval = 3
-health_increase_amount = 1
-damage_increase_interval = 5
-damage_increase_amount = 1
-cooldown_reduction_per_wave = 0.02
-min_attack_cooldown = 0.1
+
+[node name="ScoreManager" type="Node" parent="."]
+script = ExtResource("5_score_manager")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
@@ -109,3 +95,29 @@ offset_right = 400.0
 offset_bottom = 272.0
 theme_override_font_sizes/font_size = 32
 text = "State: Idle"
+
+[node name="ScoreLabel" type="Label" parent="CanvasLayer"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -300.0
+offset_top = 16.0
+offset_right = -32.0
+offset_bottom = 48.0
+grow_horizontal = 0
+theme_override_font_sizes/font_size = 32
+horizontal_alignment = 2
+text = "Score: 0"
+
+[node name="ComboLabel" type="Label" parent="CanvasLayer"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -300.0
+offset_top = 51.0
+offset_right = -32.0
+offset_bottom = 96.0
+grow_horizontal = 0
+theme_override_font_sizes/font_size = 28
+horizontal_alignment = 2
+text = ""

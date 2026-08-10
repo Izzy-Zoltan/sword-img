@@ -179,59 +179,59 @@ func _apply_slash_pose(progress: float) -> void:
 	var pos_offset := Vector3.ZERO
 
 	if _active_move == SwordMoveSystem.Move.SLASH_DOWN:
-		if progress < 0.22:
-			var windup_t := progress / 0.22
+		if progress < 0.28:
+			var windup_t := progress / 0.28
 			var ease_w := sin(windup_t * PI * 0.5)
-			pitch = lerpf(_slash_stance.x, 0.45, ease_w)
-			yaw = lerpf(_slash_stance.y, 0.0, ease_w)
-			roll = lerpf(0.0, -0.12, ease_w)
+			pitch = lerpf(_slash_stance.x, 0.75, ease_w)
+			yaw = lerpf(_slash_stance.y, 0.12, ease_w)
+			roll = lerpf(0.0, -0.18, ease_w)
 			pos_offset = Vector3(
-				0.0,
-				0.35 * ease_w,
-				0.18 * ease_w
+				-0.08 * ease_w,
+				0.45 * ease_w,
+				0.25 * ease_w
 			)
 		else:
-			var chop_t := (progress - 0.22) / 0.78
-			var ease_c := sin(chop_t * PI * 0.5)
-			pitch = lerpf(0.45, -1.25, ease_c)
-			yaw = 0.0
-			roll = lerpf(-0.12, 0.25, ease_c)
-			var lunge_dist := sin(chop_t * PI) * 1.75
+			var chop_t := (progress - 0.28) / 0.72
+			var ease_c := chop_t * chop_t * (3.0 - 2.0 * chop_t)
+			pitch = lerpf(0.75, -1.35, ease_c)
+			yaw = lerpf(0.12, -0.08, ease_c)
+			roll = lerpf(-0.18, 0.30, ease_c)
+			var lunge_curve := sin(chop_t * PI * 0.85)
 			pos_offset = Vector3(
-				0.0,
-				lerpf(0.35, -0.45, ease_c),
-				-lunge_dist
+				0.06 * ease_c,
+				lerpf(0.45, -0.55, ease_c),
+				-lunge_curve * 1.9
 			)
 	else:
 		var is_left := _active_move == SwordMoveSystem.Move.SLASH_LEFT
-		var target_yaw := 0.65 if is_left else -0.65
-		var windup_yaw := -0.22 if is_left else 0.22
+		var target_yaw := 0.78 if is_left else -0.78
+		var windup_yaw := -0.35 if is_left else 0.35
 		var roll_dir := -1.0 if is_left else 1.0
 		var side_dir := -1.0 if is_left else 1.0
 
-		if progress < 0.20:
-			var windup_t := progress / 0.20
+		if progress < 0.24:
+			var windup_t := progress / 0.24
 			var ease_w := sin(windup_t * PI * 0.5)
-			pitch = lerpf(_slash_stance.x, 0.25, ease_w)
+			pitch = lerpf(_slash_stance.x, 0.35, ease_w)
 			yaw = lerpf(_slash_stance.y, windup_yaw, ease_w)
-			roll = lerpf(0.0, -0.2 * roll_dir, ease_w)
+			roll = lerpf(0.0, -0.28 * roll_dir, ease_w)
 			pos_offset = Vector3(
-				-side_dir * 0.2 * ease_w,
-				0.15 * ease_w,
-				0.1 * ease_w
+				-side_dir * 0.28 * ease_w,
+				0.22 * ease_w,
+				0.15 * ease_w
 			)
 		else:
-			var swing_t := (progress - 0.20) / 0.80
-			var ease_s := sin(swing_t * PI * 0.5)
-			pitch = lerpf(0.25, -0.20, ease_s)
+			var swing_t := (progress - 0.24) / 0.76
+			var ease_s := swing_t * swing_t * (3.0 - 2.0 * swing_t)
+			pitch = lerpf(0.35, -0.30, ease_s)
 			yaw = lerpf(windup_yaw, target_yaw, ease_s)
-			roll = lerpf(-0.2 * roll_dir, 0.35 * roll_dir, ease_s)
-			var arc_progress := sin(swing_t * PI)
-			var lunge_dist := arc_progress * 1.85
-			var lateral_dist := side_dir * arc_progress * 1.15
+			roll = lerpf(-0.28 * roll_dir, 0.40 * roll_dir, ease_s)
+			var arc_curve := sin(swing_t * PI * 0.9)
+			var lunge_dist := arc_curve * 2.0
+			var lateral_dist := side_dir * ease_s * 1.3
 			pos_offset = Vector3(
 				lateral_dist,
-				-0.15 * ease_s,
+				-0.20 * ease_s,
 				-lunge_dist
 			)
 
