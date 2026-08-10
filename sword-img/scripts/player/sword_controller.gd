@@ -190,6 +190,7 @@ func _on_died() -> void:
 	set_process(false)
 	set_physics_process(false)
 	set_process_input(false)
+	died.emit()
 
 
 # --- Public API (for enemy scripts) ---

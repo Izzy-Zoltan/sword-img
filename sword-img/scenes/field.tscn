@@ -1,10 +1,11 @@
-[gd_scene load_steps=10 format=3 uid="uid://cps20g3i3byav"]
+[gd_scene load_steps=11 format=3 uid="uid://cps20g3i3byav"]
 
 [ext_resource type="PackedScene" uid="uid://nc52v1wy208o" path="res://scenes/player.tscn" id="1_player"]
 [ext_resource type="Script" uid="uid://ve1w8h3q6s3o" path="res://scripts/ui/field_hud.gd" id="2_field_hud"]
 [ext_resource type="PackedScene" uid="uid://d4n0k2k7j8r1m" path="res://scenes/enemy.tscn" id="3_enemy"]
 [ext_resource type="Script" uid="uid://dos41d16xgc0w" path="res://scripts/combat/wave_manager.gd" id="4_wave_manager"]
-[ext_resource type="Script" path="res://scripts/combat/score_manager.gd" id="5_score_manager"]
+[ext_resource type="Script" uid="uid://cr758alshwo3j" path="res://scripts/combat/score_manager.gd" id="5_score_manager"]
+[ext_resource type="FontFile" uid="uid://rvh5s6ii5btr" path="res://Assets/PixelifySans-Bold.ttf" id="6_wnvii"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_floor"]
 size = Vector2(24, 24)
@@ -65,59 +66,89 @@ script = ExtResource("5_score_manager")
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
 [node name="WaveLabel" type="Label" parent="CanvasLayer"]
-offset_left = 98.0
+offset_left = 24.0
 offset_top = 16.0
-offset_right = 350.0
-offset_bottom = 48.0
-theme_override_font_sizes/font_size = 32
+offset_right = 400.0
+offset_bottom = 58.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.5)
+theme_override_constants/outline_size = 8
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_fonts/font = ExtResource("6_wnvii")
+theme_override_font_sizes/font_size = 34
 text = "Wave: --"
 
 [node name="EnemiesLabel" type="Label" parent="CanvasLayer"]
-offset_left = 98.0
-offset_top = 51.0
-offset_right = 350.0
-offset_bottom = 96.0
-theme_override_font_sizes/font_size = 32
+offset_left = 24.0
+offset_top = 54.0
+offset_right = 400.0
+offset_bottom = 90.0
+theme_override_colors/font_color = Color(0.85, 0.92, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.5)
+theme_override_constants/outline_size = 8
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_fonts/font = ExtResource("6_wnvii")
+theme_override_font_sizes/font_size = 28
 text = "Get Ready!"
 
 [node name="HealthLabel" type="Label" parent="CanvasLayer"]
-offset_left = 98.0
-offset_top = 139.0
-offset_right = 210.0
-offset_bottom = 184.0
-theme_override_font_sizes/font_size = 32
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -58.0
+offset_right = 280.0
+offset_bottom = -16.0
+grow_vertical = 0
+theme_override_colors/font_color = Color(1, 0.4, 0.35, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.5)
+theme_override_constants/outline_size = 8
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_fonts/font = ExtResource("6_wnvii")
+theme_override_font_sizes/font_size = 34
 text = "Health:"
-
-[node name="StateLabel" type="Label" parent="CanvasLayer"]
-offset_left = 98.0
-offset_top = 227.0
-offset_right = 400.0
-offset_bottom = 272.0
-theme_override_font_sizes/font_size = 32
-text = "State: Idle"
 
 [node name="ScoreLabel" type="Label" parent="CanvasLayer"]
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -300.0
+offset_left = -350.0
 offset_top = 16.0
-offset_right = -32.0
-offset_bottom = 48.0
+offset_right = -24.0
+offset_bottom = 58.0
 grow_horizontal = 0
-theme_override_font_sizes/font_size = 32
-horizontal_alignment = 2
+theme_override_colors/font_color = Color(1, 0.95, 0.6, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.5)
+theme_override_constants/outline_size = 8
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_fonts/font = ExtResource("6_wnvii")
+theme_override_font_sizes/font_size = 34
 text = "Score: 0"
+horizontal_alignment = 2
 
 [node name="ComboLabel" type="Label" parent="CanvasLayer"]
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -300.0
-offset_top = 51.0
-offset_right = -32.0
-offset_bottom = 96.0
+offset_left = -350.0
+offset_top = 54.0
+offset_right = -24.0
+offset_bottom = 90.0
 grow_horizontal = 0
+theme_override_colors/font_color = Color(1, 0.7, 0.2, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.5)
+theme_override_constants/outline_size = 8
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_fonts/font = ExtResource("6_wnvii")
 theme_override_font_sizes/font_size = 28
 horizontal_alignment = 2
-text = ""
