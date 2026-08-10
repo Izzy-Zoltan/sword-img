@@ -8,8 +8,6 @@ radius = 0.45
 
 [node name="Enemy" type="CharacterBody3D"]
 script = ExtResource("1_enemy_script")
-speed = 7.0
-max_health = 3
 
 [node name="GoblinModel" parent="." instance=ExtResource("1_goblin_model")]
 transform = Transform3D(0.75, 0, 0, 0, 0.75, 0, 0, 0, 0.75, 0, 0, 0)
