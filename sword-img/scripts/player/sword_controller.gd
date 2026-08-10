@@ -6,7 +6,7 @@ const SWORD_RANGE := 4.5
 
 @export var settings: SwordCombatSettings
 @export var max_health: int = 5
-@export var hits_per_charge: int = 3  ## Melee hits needed to earn one charge shot
+@export var hits_per_charge: int = 3  
 
 signal health_changed(new_health)
 signal charge_changed(points: int, max_points: int)
@@ -164,15 +164,15 @@ func _can_charge() -> bool:
 func _update_charge_glow() -> void:
 	if _sword_material == null:
 		return
-	# When charge is ready and we're in idle (not mid-slash/charge), pulse the blade
 	if charge_points >= hits_per_charge and move_system.state == SwordMoveSystem.State.IDLE:
-		var pulse := (sin(Time.get_ticks_msec() * 0.006) * 0.5 + 0.5)
-		var charge_color := Color(0.3, 0.9, 1.0).lerp(Color(0.1, 0.6, 1.0), pulse)
-		_sword_material.albedo_color = charge_color
-		_sword_material.emission_enabled = true
-		_sword_material.emission = charge_color * 0.8
-		_sword_material.emission_energy_multiplier = 1.5 + pulse * 1.5
+		var flash := maxf(sin(Time.get_ticks_msec() * 0.004), 0.0) 
+		var charge_color := Color(0.3, 0.9, 1.0)
+		_sword_material.albedo_color = _default_blade_color.lerp(charge_color, flash)
+		_sword_material.emission_enabled = flash > 0.1
+		_sword_material.emission = charge_color * flash
+		_sword_material.emission_energy_multiplier = _default_emission_energy + flash * 3.0
 	elif move_system.state == SwordMoveSystem.State.IDLE:
+		_sword_material.albedo_color = _default_blade_color
 		_sword_material.emission_energy_multiplier = _default_emission_energy
 		_sword_material.emission_enabled = false
 
@@ -273,7 +273,6 @@ func _fire_charged_projectile(slash_move: SwordMoveSystem.Move) -> void:
 	charge_points = 0
 	charge_changed.emit(charge_points, hits_per_charge)
 
-	# Find nearest enemy and hit it directly.
 	var best_enemy: Node3D = null
 	var best_dist := INF
 	for enemy in get_tree().get_nodes_in_group("enemies"):
@@ -290,7 +289,6 @@ func _fire_charged_projectile(slash_move: SwordMoveSystem.Move) -> void:
 		_suppress_charge_gain = false
 		_current_slash_hit = true
 
-	# Spawn the visual projectile aimed at the target (or straight forward).
 	var projectile := ChargedProjectile.new()
 	var collider := CollisionShape3D.new()
 	var shape := BoxShape3D.new()
@@ -322,7 +320,6 @@ func _projectile_direction_for_slash(slash_move: SwordMoveSystem.Move) -> Vector
 	forward = forward.normalized()
 	right = right.normalized()
 
-	# Aim at the nearest living enemy, regardless of lane.
 	var best_enemy: Node3D = null
 	var best_dist_sq := INF
 	for enemy in get_tree().get_nodes_in_group("enemies"):
@@ -338,7 +335,6 @@ func _projectile_direction_for_slash(slash_move: SwordMoveSystem.Move) -> Vector
 		if to_enemy.length_squared() > 0.001:
 			return to_enemy.normalized()
 
-	# Fallback: aim straight forward.
 	return forward
 
 
@@ -353,7 +349,6 @@ func take_damage(amount: int) -> void:
 	health = max(health - amount, 0)
 	health_changed.emit(health)
 
-	# Visual feedback: camera shake + red screen flash
 	sword_vfx.trigger_damage_shake(0.55)
 	_flash_damage_screen()
 
@@ -365,7 +360,6 @@ func take_damage(amount: int) -> void:
 
 
 func _flash_damage_screen() -> void:
-	# Create a full-screen red flash overlay using a CanvasLayer + ColorRect
 	var canvas := CanvasLayer.new()
 	canvas.layer = 100
 	add_child(canvas)

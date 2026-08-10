@@ -64,7 +64,6 @@ func trigger_impact_shake(intensity: float = 0.35) -> void:
 
 
 func trigger_damage_shake(intensity: float = 0.5) -> void:
-	# Stronger, more violent shake for taking damage
 	_trauma = clampf(_trauma + intensity, 0.0, 1.2)
 
 

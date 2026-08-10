@@ -195,7 +195,6 @@ func _try_commit_slash() -> void:
 			_reset_slash_tracking()
 		return
 	else:
-		# Ignore ambiguous diagonal gestures; this keeps attacks intentional.
 		_reset_slash_tracking()
 		return
 

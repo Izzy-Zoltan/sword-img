@@ -92,9 +92,15 @@ func _handle_attack(player: Node3D) -> void:
 func _take_damage(amount: int) -> void:
 	if _enemy._is_dying:
 		return
+	if not _enemy.is_inside_tree():
+		return
 
 	_health -= amount
 	_enemy._stagger_timer = 0.22
+
+	# Reset attack state so it must restart windup after recovering
+	_is_winding_up = false
+	_is_idling_before_attack = false
 
 	if _enemy._outline != null:
 		_enemy._outline.trigger_hit_flash()
@@ -155,11 +161,9 @@ func _spawn_hit_sparks(pos: Vector3, hit_dir: Vector3) -> void:
 	if not _enemy.is_inside_tree():
 		return
 	var particles := HitSparksScene.instantiate() as CPUParticles3D
+	_enemy.get_tree().current_scene.add_child(particles)
 	particles.global_position = pos
 	particles.direction = hit_dir + Vector3.UP * 0.4
-
-	_enemy.get_tree().current_scene.add_child(particles)
-
 	particles.finished.connect(particles.queue_free)
 	particles.emitting = true
 
@@ -168,10 +172,8 @@ func _spawn_death_sparks(pos: Vector3, hit_dir: Vector3) -> void:
 	if not _enemy.is_inside_tree():
 		return
 	var particles := DeathSparksScene.instantiate() as CPUParticles3D
+	_enemy.get_tree().current_scene.add_child(particles)
 	particles.global_position = pos
 	particles.direction = hit_dir + Vector3.UP * 0.8
-
-	_enemy.get_tree().current_scene.add_child(particles)
-
 	particles.finished.connect(particles.queue_free)
 	particles.emitting = true

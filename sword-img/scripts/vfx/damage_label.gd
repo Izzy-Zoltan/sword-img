@@ -44,11 +44,7 @@ static func show_miss(parent: Node, camera: Camera3D) -> void:
 static func _spawn(
 	parent: Node,
 	pos: Vector3,
-	text: String,
-	font_size: int,
-	pixel_size: float,
 	color: Color,
-	outline_size: int,
 	rise_amount: float,
 	duration: float,
 	fade_delay: float,
