@@ -18,5 +18,3 @@ func get_rotation_delta() -> Vector2:
 	return delta
 
 
-func get_grip_strength() -> float:
-	return 1.0 if Input.is_mouse_button_pressed(grip_mouse_button) else 0.0

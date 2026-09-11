@@ -108,7 +108,6 @@ func _on_player_died() -> void:
 	_game_over_mouse_y = 0.0
 	Engine.time_scale = 1.0
 	_show_game_over_overlay()
-	get_tree().create_timer(1.0).timeout.connect(func(): _game_over_accept = true)
 
 
 func _show_game_over_overlay() -> void:
@@ -204,6 +203,7 @@ func _show_game_over_overlay() -> void:
 	fade.tween_property(score_text, "modulate:a", 1.0, 0.5).set_trans(Tween.TRANS_QUAD)
 	fade.tween_property(stats_text, "modulate:a", 1.0, 0.4).set_trans(Tween.TRANS_QUAD)
 	fade.tween_property(prompt, "modulate:a", 1.0, 0.4).set_trans(Tween.TRANS_QUAD)
+	fade.tween_callback(func(): _game_over_accept = true)
 
 	var pulse := create_tween().set_loops()
 	pulse.tween_interval(2.5)

@@ -6,6 +6,7 @@ extends Node3D
 @onready var camera: Camera3D = $Camera3D
 @onready var sword_mesh: Node3D = $Camera3D/SwordPivot/SwordMesh
 @onready var input_provider: SwordInputProvider = $MouseSwordInput
+@onready var esp32_input: ESP32SwordInput = $ESP32SwordInput
 @onready var move_system: SwordMoveSystem = $SwordMoveSystem
 @onready var move_animator: SwordMoveAnimator = $Camera3D/SwordMoveAnimator
 @onready var sword_vfx: SwordVFX = $Camera3D/SwordVFX
@@ -46,29 +47,31 @@ func _ready() -> void:
 	move_animator.slash_pose_changed.connect(_on_slash_pose_changed)
 	move_animator.charge_pose_changed.connect(_on_charge_pose_changed)
 
-	# Wire health
 	player_health.died.connect(_on_died)
 	player_health.health_changed.connect(func(h): health_changed.emit(h))
 
-	# Wire charge
 	player_charge.charge_changed.connect(func(p, m): charge_changed.emit(p, m))
 
 	_on_move_changed(move_system.move)
-
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		_toggle_mouse_capture()
 
-
 func _physics_process(delta: float) -> void:
 	var rot_delta := input_provider.get_rotation_delta()
-	var blocking_input := input_provider.get_grip_strength() > 0.5
+	if esp32_input != null and esp32_input.is_esp32_connected():
+		rot_delta += esp32_input.get_rotation_delta()
 
 	if move_system.can_accept_input() and not move_animator.is_playing():
-		_apply_mouse_rotation(rot_delta, blocking_input, delta)
-	elif move_system.is_blocking():
-		_update_block_state(blocking_input)
+		_apply_mouse_rotation(rot_delta, delta)
+
+	else:
+		_pivot_rotation.x = clampf(_pivot_rotation.x - rot_delta.y, -settings.pitch_limit, settings.pitch_limit)
+		_pivot_rotation.y = clampf(_pivot_rotation.y - rot_delta.x, -settings.yaw_limit, settings.yaw_limit)
+
+	move_animator.recovery_target_rotation = _pivot_rotation
+	move_animator.recovery_target_position = move_animator._neutral_position
 
 	if move_system.can_accept_input() and not move_animator.is_playing():
 		_pivot_rotation = _current_pivot_rotation()
@@ -89,7 +92,7 @@ func _current_pivot_rotation() -> Vector2:
 	return Vector2(sword_pivot.rotation.x, sword_pivot.rotation.y)
 
 
-func _apply_mouse_rotation(rot_delta: Vector2, blocking_input: bool, delta: float) -> void:
+func _apply_mouse_rotation(rot_delta: Vector2, delta: float) -> void:
 	var stance_before_input := _current_pivot_rotation()
 	_pivot_rotation.x = clampf(_pivot_rotation.x - rot_delta.y, -settings.pitch_limit, settings.pitch_limit)
 	_pivot_rotation.y = clampf(_pivot_rotation.y - rot_delta.x, -settings.yaw_limit, settings.yaw_limit)
@@ -97,7 +100,7 @@ func _apply_mouse_rotation(rot_delta: Vector2, blocking_input: bool, delta: floa
 	var target := Vector3(_pivot_rotation.x, _pivot_rotation.y, 0.0)
 	sword_pivot.rotation = sword_pivot.rotation.lerp(target, 1.0 - exp(-settings.rotation_smoothing * delta))
 
-	move_system.update_gestures(_pivot_rotation, stance_before_input, rot_delta, delta, blocking_input)
+	move_system.update_gestures(_pivot_rotation, stance_before_input, rot_delta, delta)
 
 
 func _update_block_state(blocking_input: bool) -> void:
@@ -116,7 +119,6 @@ func _on_move_changed(new_move: SwordMoveSystem.Move) -> void:
 	match new_move:
 		SwordMoveSystem.Move.CHARGE:
 			_start_move_animation(new_move)
-		SwordMoveSystem.Move.BLOCK:
 			_start_move_animation(new_move)
 		_:
 			if move_system.is_slash_move(new_move):
@@ -131,8 +133,6 @@ func _start_move_animation(new_move: SwordMoveSystem.Move) -> void:
 	match new_move:
 		SwordMoveSystem.Move.CHARGE:
 			move_animator.play_charge_enter(_current_pivot_rotation())
-		SwordMoveSystem.Move.BLOCK:
-			move_animator.play_block_enter(_current_pivot_rotation())
 		_:
 			if move_system.last_committed_snapshot.get("charged", false):
 				hit_detection.fire_charged_projectile(new_move)
@@ -159,16 +159,8 @@ func _check_whiff_miss() -> void:
 		DamageLabel.show_miss(get_tree().current_scene, camera)
 
 
-func _on_slash_landed(snapshot: Dictionary) -> void:
-	print(
-		"Slash finished | move: %s | speed: %.2f | angle: %.2f | axis: %s | charged: %s" % [
-			snapshot.move,
-			snapshot.peak_speed,
-			snapshot.swing_angle,
-			snapshot.dominant_axis,
-			snapshot.get("charged", false),
-		]
-	)
+func _on_slash_landed(_snapshot: Dictionary) -> void:
+	pass
 
 
 func _on_slash_impact(slash_move: SwordMoveSystem.Move, _snapshot: Dictionary) -> void:
@@ -183,17 +175,11 @@ func _on_slash_pose_changed(progress: float, direction: Vector2) -> void:
 func _on_charge_pose_changed(progress: float) -> void:
 	sword_vfx.on_charge_pose_changed(progress)
 
-
-# --- Health callbacks ---
-
 func _on_died() -> void:
 	set_process(false)
 	set_physics_process(false)
 	set_process_input(false)
 	died.emit()
-
-
-# --- Public API (for enemy scripts) ---
 
 func take_damage(amount: int) -> void:
 	player_health.take_damage(amount)
@@ -232,9 +218,6 @@ func on_ko_landed(score_mult: float = 1.0, was_crit: bool = false) -> void:
 	var sm := _get_score_manager()
 	if sm:
 		sm.register_kill(score_mult, was_crit)
-
-
-# --- Utility ---
 
 func _resolve_sword_material() -> StandardMaterial3D:
 	var mesh_instance := _find_mesh_instance(sword_mesh)

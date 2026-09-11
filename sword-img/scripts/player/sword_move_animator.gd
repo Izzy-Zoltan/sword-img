@@ -14,16 +14,17 @@ var _active_move: SwordMoveSystem.Move = SwordMoveSystem.Move.IDLE
 var _stroke_snapshot: Dictionary = {}
 var _tween: Tween
 var _guard_rotation := Vector2.ZERO
-var _releasing_block := false
 var _slash_stance := Vector2.ZERO
 var _slash_start_position := Vector3.ZERO
 var _slash_direction := Vector2.ZERO
 var _slash_peak_rotation := Vector2.ZERO
 var _neutral_position := Vector3.ZERO
-var _slash_return_rotation := Vector2.ZERO
+var _slash_return_rotation := Vector3.ZERO
 var _slash_return_position := Vector3.ZERO
 var _charge_start_rotation := Vector2.ZERO
 var _charge_start_position := Vector3.ZERO
+var recovery_target_rotation := Vector2.ZERO
+var recovery_target_position := Vector3.ZERO
 
 
 func _ready() -> void:
@@ -62,8 +63,7 @@ func play_slash(
 	_tween.tween_method(_apply_slash_pose, 0.0, 1.0, settings.slash_strike_time).set_ease(Tween.EASE_OUT)
 	_tween.tween_callback(_on_slash_impact)
 	_tween.tween_method(_apply_slash_pose, 1.0, 0.72, settings.slash_settle_time).set_ease(Tween.EASE_OUT)
-	_slash_return_rotation = _slash_stance.lerp(_slash_peak_rotation, 0.72)
-	_slash_return_position = _slash_position_at(0.72)
+	_tween.tween_callback(_capture_slash_return_start)
 	_tween.tween_method(_apply_slash_return, 0.0, 1.0, settings.slash_recover_time).set_ease(Tween.EASE_IN_OUT)
 	_tween.finished.connect(_on_tween_finished, CONNECT_ONE_SHOT)
 
@@ -81,62 +81,18 @@ func play_charge_enter(start_rotation: Vector2) -> void:
 	_tween.tween_method(_apply_charge_pose, 0.0, 1.0, settings.charge_enter_time).set_ease(Tween.EASE_OUT)
 	_tween.finished.connect(_on_tween_finished, CONNECT_ONE_SHOT)
 
-
-func play_block_enter(start_rotation: Vector2) -> void:
-	_cancel_tween()
-	_active_move = SwordMoveSystem.Move.BLOCK
-	_stroke_snapshot = {}
-	_releasing_block = false
-	_guard_rotation = _clamp_rotation(start_rotation + settings.block_guard_offset)
-
-	_tween = create_tween()
-	_tween.set_trans(Tween.TRANS_QUAD)
-	_tween.tween_method(_apply_rotation, start_rotation, _guard_rotation, settings.block_enter_time).set_ease(Tween.EASE_OUT)
-	_tween.finished.connect(_on_block_enter_finished, CONNECT_ONE_SHOT)
-
-
-func maintain_block() -> void:
-	if _active_move != SwordMoveSystem.Move.BLOCK or _releasing_block:
-		return
-
-	_apply_rotation(_guard_rotation)
-
-
-func release_block() -> void:
-	if _active_move != SwordMoveSystem.Move.BLOCK or _releasing_block:
-		return
-
-	_releasing_block = true
-	var start_rotation := _clamp_rotation(Vector2(sword_pivot.rotation.x, sword_pivot.rotation.y))
-	var rest_rotation := start_rotation - settings.block_guard_offset
-
-	_cancel_tween()
-	_tween = create_tween()
-	_tween.set_trans(Tween.TRANS_QUAD)
-	_tween.tween_method(_apply_rotation, start_rotation, _clamp_rotation(rest_rotation), settings.block_exit_time).set_ease(
-		Tween.EASE_IN_OUT
-	)
-	_tween.finished.connect(_on_tween_finished, CONNECT_ONE_SHOT)
-
-
 func is_playing() -> bool:
 	return _active_move != SwordMoveSystem.Move.IDLE
-
-
-func _on_block_enter_finished() -> void:
-	maintain_block()
-
 
 func _on_tween_finished() -> void:
 	var finished_move := _active_move
 	var snapshot := _stroke_snapshot
 	_active_move = SwordMoveSystem.Move.IDLE
 	_stroke_snapshot = {}
-	_releasing_block = false
 
 	if _is_slash_move(finished_move) and is_instance_valid(sword_pivot):
-		_apply_rotation(settings.neutral_rotation)
-		sword_pivot.position = _neutral_position
+		_apply_rotation(_slash_stance)
+		sword_pivot.position = _slash_start_position
 	animation_finished.emit(finished_move, snapshot)
 
 
@@ -240,10 +196,15 @@ func _apply_slash_pose(progress: float) -> void:
 	slash_pose_changed.emit(progress, _slash_direction)
 
 
+func _capture_slash_return_start() -> void:
+	_slash_return_rotation = sword_pivot.rotation
+	_slash_return_position = sword_pivot.position
+
+
 func _apply_slash_return(progress: float) -> void:
-	var rotation_xy := _slash_return_rotation.lerp(settings.neutral_rotation, progress)
-	sword_pivot.rotation = Vector3(rotation_xy.x, rotation_xy.y, 0.0)
-	sword_pivot.position = _slash_return_position.lerp(_neutral_position, progress)
+	var target_rotation := Vector3(_slash_stance.x, _slash_stance.y, 0.0)
+	sword_pivot.rotation = _slash_return_rotation.lerp(target_rotation, progress)
+	sword_pivot.position = _slash_return_position.lerp(_slash_start_position, progress)
 	slash_pose_changed.emit(lerpf(0.72, 0.0, progress), _slash_direction)
 
 
@@ -257,20 +218,6 @@ func _apply_charge_pose(progress: float) -> void:
 	)
 	sword_pivot.position = _charge_start_position.lerp(charge_position, progress)
 	charge_pose_changed.emit(progress)
-
-
-func _slash_position_at(progress: float) -> Vector3:
-	var base_progress := sin(progress * PI)
-	var reach := base_progress * 1.55
-	var lateral := base_progress * 0.95
-
-	var is_horizontal := absf(_slash_direction.y) > 0.5
-	if is_horizontal:
-		reach *= 1.2
-
-	var vertical_offset := -_slash_direction.x * base_progress * 0.35
-	var lateral_offset := -_slash_direction.y * lateral
-	return _slash_start_position + Vector3(lateral_offset, vertical_offset, -reach)
 
 
 func _on_slash_impact() -> void:

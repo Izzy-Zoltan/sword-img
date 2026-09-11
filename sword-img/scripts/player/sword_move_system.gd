@@ -7,14 +7,12 @@ signal slash_landed(snapshot: Dictionary)
 
 enum State {
 	IDLE,
-	BLOCKING,
 	CHARGED,
 	SLASHING,
 }
 
 enum Move {
 	IDLE,
-	BLOCK,
 	CHARGE,
 	SLASH_LEFT,
 	SLASH_RIGHT,
@@ -23,14 +21,12 @@ enum Move {
 
 const STATE_NAMES: Dictionary = {
 	State.IDLE: "Idle",
-	State.BLOCKING: "Blocking",
 	State.CHARGED: "Charged",
 	State.SLASHING: "Slashing",
 }
 
 const MOVE_NAMES: Dictionary = {
 	Move.IDLE: "Idle",
-	Move.BLOCK: "Block",
 	Move.CHARGE: "Charge",
 	Move.SLASH_LEFT: "Slash Left",
 	Move.SLASH_RIGHT: "Slash Right",
@@ -39,7 +35,6 @@ const MOVE_NAMES: Dictionary = {
 
 const MOVE_COLORS: Dictionary = {
 	Move.IDLE: Color(0.72, 0.76, 0.82),
-	Move.BLOCK: Color(0.55, 0.65, 0.85),
 	Move.CHARGE: Color(0.35, 0.82, 1.0),
 	Move.SLASH_LEFT: Color(0.95, 0.55, 0.45),
 	Move.SLASH_RIGHT: Color(0.95, 0.55, 0.45),
@@ -84,11 +79,6 @@ func _ready() -> void:
 func can_accept_input() -> bool:
 	return state == State.IDLE or state == State.CHARGED
 
-
-func is_blocking() -> bool:
-	return state == State.BLOCKING
-
-
 func is_slashing() -> bool:
 	return state == State.SLASHING
 
@@ -114,19 +104,8 @@ func update_gestures(
 	stroke_start_rotation: Vector2,
 	rotation_delta: Vector2,
 	delta: float,
-	blocking_input: bool,
 ) -> void:
 	pivot_angle = pivot_rotation
-
-	if not can_accept_input():
-		if blocking_input and _pending_move == Move.IDLE:
-			_pending_move = Move.BLOCK
-		return
-
-	if blocking_input and _pending_move == Move.IDLE and state != State.CHARGED:
-		if charge_check.is_valid() and charge_check.call():
-			_commit_move(Move.CHARGE)
-		return
 
 	var speed := rotation_delta.length() / maxf(delta, 0.0001)
 
@@ -145,9 +124,6 @@ func update_gestures(
 	elif _tracking_slash:
 		_try_commit_slash()
 		_reset_slash_tracking()
-	elif blocking_input:
-		_commit_move(Move.BLOCK)
-
 
 func notify_animation_finished(finished_move: Move, snapshot: Dictionary = {}) -> void:
 	if move != finished_move:
@@ -223,8 +199,6 @@ func _enter_move(new_move: Move) -> void:
 func _state_for_move(sword_move: Move) -> State:
 	if is_slash_move(sword_move):
 		return State.SLASHING
-	if sword_move == Move.BLOCK:
-		return State.BLOCKING
 	if sword_move == Move.CHARGE:
 		return State.CHARGED
 	return State.IDLE
